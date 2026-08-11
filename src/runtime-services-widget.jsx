@@ -26,7 +26,7 @@ const URL_RAJYA   = "https://text-risk-scoring-service.onrender.com";
 const URL_TANTRA  = "https://tantra-gated-bridge-infrastructure.onrender.com";
 const URL_BUCKET  = "https://bhiv-bucket-i1l6.onrender.com";
 const URL_SANSKAR = "https://full-tantra-constitutional-convergence.onrender.com";
-const URL_HARSHA  = null; // ← Replace with Harsha's base URL when received
+const URL_HARSHA  = "https://sl-validator-cet.onrender.com";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -825,23 +825,80 @@ function SanskarPanel() {
 }
 
 // ── HARSHA Panel — CET / KSML / SUM-SCRIPT ───────────────────────────────────
+const HARSHA_TEMPLATES = {
+  validate_dec: JSON.stringify({
+    decision_id: "dec-001",
+    trace_id: "trace-101",
+    intent: "EXECUTE_TRANSACTION",
+    actors: { user_id: "usr_99" },
+    constraints: [{ left: "balance", operator: ">=", right: 100 }],
+    context: { env: "production" },
+    timestamp: "2026-08-11T12:00:00Z"
+  }, null, 2),
+  ksml: JSON.stringify({
+    decision_id: "dec-ksml-001",
+    trace_id: "trace-ksml-101",
+    intent: "COMPILE_KSML",
+    actors: { system: "ksml_compiler" },
+    constraints: [{ left: "status", operator: "==", right: "active" }],
+    context: { version: "1.0" },
+    timestamp: "2026-08-11T12:00:00Z"
+  }, null, 2),
+  cet: JSON.stringify({
+    trace_id: "trace-cet-101",
+    version: "1.0"
+  }, null, 2),
+  forward: JSON.stringify({
+    sum_script: {
+      script_id: "sum-001",
+      steps: []
+    }
+  }, null, 2),
+  enforce: JSON.stringify({
+    sum_script: {
+      script_id: "sum-001",
+      steps: []
+    }
+  }, null, 2),
+  validate_exec: JSON.stringify({
+    sum_script: {
+      script_id: "sum-001",
+      steps: []
+    }
+  }, null, 2),
+  execute: JSON.stringify({
+    sum_script: {
+      execution_id: "exec-999",
+      steps: []
+    }
+  }, null, 2)
+};
+
 function HarshaPanel() {
-  const [tab,      setTab]     = useState("ksml");
+  const [tab,      setTab]     = useState("validate_dec");
   const [result,   setResult]  = useState(null);
   const [loading,  setLoading] = useState(false);
   const [error,    setError]   = useState(null);
-  const [reqBody,  setReqBody] = useState('{\n  "input": "test_script",\n  "version": "1.0"\n}');
+  const [reqBody,  setReqBody] = useState(HARSHA_TEMPLATES.validate_dec);
 
   const TABS = [
-    { id: "ksml",    label: "KSML",     endpoint: "/compile_execution",  desc: "Compile KSML input → deterministic SUM-SCRIPT" },
-    { id: "cet",     label: "CET",      endpoint: "/cet/compile",        desc: "CET compile → SUM-SCRIPT + contract hash" },
-    { id: "forward", label: "Forward",  endpoint: "/forward_to_sarathi", desc: "Forward SUM-SCRIPT to Sarathi stage" },
-    { id: "enforce", label: "Enforce",  endpoint: "/enforce_execution",  desc: "Sarathi enforcement → enforcement token" },
-    { id: "validate",label: "Validate", endpoint: "/validate_execution", desc: "Bridge validation before execution" },
-    { id: "execute", label: "Execute",  endpoint: "/execute",            desc: "Execute the validated SUM-SCRIPT" },
+    { id: "validate_dec", label: "Validate Decision", endpoint: "/validate",            desc: "Deterministic DecisionRequest validation" },
+    { id: "ksml",         label: "KSML Compile",      endpoint: "/compile_execution",  desc: "Compile KSML input → deterministic SUM-SCRIPT" },
+    { id: "cet",          label: "CET Compile",       endpoint: "/cet/compile",        desc: "CET compile → SUM-SCRIPT + contract hash" },
+    { id: "forward",      label: "Forward",           endpoint: "/forward_to_sarathi", desc: "Forward SUM-SCRIPT to Sarathi stage" },
+    { id: "enforce",      label: "Enforce",           endpoint: "/enforce_execution",  desc: "Sarathi enforcement → enforcement token" },
+    { id: "validate_exec",label: "Validate Exec",     endpoint: "/validate_execution", desc: "Bridge validation before execution" },
+    { id: "execute",      label: "Execute",           endpoint: "/execute",            desc: "Execute the validated SUM-SCRIPT" },
   ];
 
   const activeTab = TABS.find(t => t.id === tab) || TABS[0];
+
+  const handleTabChange = (tabId) => {
+    setTab(tabId);
+    setResult(null);
+    setError(null);
+    setReqBody(HARSHA_TEMPLATES[tabId] || '{}');
+  };
 
   const run = useCallback(async () => {
     if (!URL_HARSHA) return;
@@ -869,7 +926,7 @@ function HarshaPanel() {
           <div style={{ color: C.textSub, marginBottom: 10 }}>
             Set <code style={{ fontFamily: MONO, background: C.elevated, padding: "1px 5px", borderRadius: 3 }}>URL_HARSHA</code> at
             the top of <code style={{ fontFamily: MONO, background: C.elevated, padding: "1px 5px", borderRadius: 3 }}>runtime-services-widget.jsx</code>.
-            All 6 endpoints are wired and ready.
+            All endpoints are wired and ready.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             {TABS.map(t => (
@@ -908,7 +965,7 @@ function HarshaPanel() {
       {/* Tabs */}
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); setResult(null); setError(null); }} style={{
+          <button key={t.id} onClick={() => handleTabChange(t.id)} style={{
             fontSize: 10, padding: "3px 10px", borderRadius: 99, cursor: "pointer",
             border: "1px solid " + (tab === t.id ? C.teal : C.border),
             background: tab === t.id ? C.teal + "1A" : "transparent",
@@ -933,7 +990,7 @@ function HarshaPanel() {
         <textarea
           value={reqBody}
           onChange={e => setReqBody(e.target.value)}
-          rows={4}
+          rows={6}
           style={{
             width: "100%", background: C.elevated,
             border: "1px solid " + C.border, borderRadius: 7,
@@ -966,6 +1023,7 @@ function HarshaPanel() {
     </Card>
   );
 }
+
 
 // ── PRANA Replay Panel ────────────────────────────────────────────────────────
 function ReplayPanel() {
@@ -1134,12 +1192,8 @@ export default function RuntimeServicesWidget() {
         <span style={{ color: C.accent, fontWeight: 600 }}>All live endpoints — zero mock data: </span>
         PRANA ({URL_PRANA}) · KARMA ({URL_KARMA}) · RAJYA (text-risk-scoring-service.onrender.com) ·
         TANTRA (tantra-gated-bridge-infrastructure.onrender.com) · BUCKET (bhiv-bucket-i1l6.onrender.com) ·
-        SANSKAR (full-tantra-constitutional-convergence.onrender.com).
-        {!URL_HARSHA && (
-          <span style={{ color: C.warn }}>
-            {" "}⚠ HARSHA URL not set — set URL_HARSHA at top of runtime-services-widget.jsx once Harsha sends it.
-          </span>
-        )}
+        SANSKAR (full-tantra-constitutional-convergence.onrender.com) · HARSHA ({URL_HARSHA}).
+
       </div>
     </div>
   );

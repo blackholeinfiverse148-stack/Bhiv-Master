@@ -12,7 +12,7 @@ This document details all API endpoints integrated within the BHIV Dashboard Kit
 | **TANTRA** | `https://tantra-gated-bridge-infrastructure.onrender.com` | `/health`<br>`/status` | `GET`<br>`GET` | Bridge monitoring and Gated Bridge state. |
 | **BUCKET** | `https://bhiv-bucket-i1l6.onrender.com` | `/health`<br>`/bucket/chain-state`<br>`/bucket/artifacts`<br>`/bucket/artifact/{id}` | `GET`<br>`GET`<br>`GET`<br>`GET` | Provenance store, artifact lists, and detail payload querying. |
 | **SANSKAR** | `https://full-tantra-constitutional-convergence.onrender.com` | `/health`<br>`/status` | `GET`<br>`GET` | Constitutional convergence state and metrics. |
-| **HARSHA** | `URL_HARSHA` (TBD) | `/health`<br>`/execute` | `GET`<br>`POST` | CET, KSML, and SUM-SCRIPT runtime actions. |
+| **HARSHA** | `https://sl-validator-cet.onrender.com` | `/health`<br>`/validate`<br>`/compile_execution`<br>`/cet/compile`<br>`/forward_to_sarathi`<br>`/enforce_execution`<br>`/validate_execution`<br>`/execute` | `GET`<br>`POST`<br>`POST`<br>`POST`<br>`POST`<br>`POST`<br>`POST`<br>`POST` | SL Validator, CET, KSML, and SUM-SCRIPT runtime actions. |
 
 ## 2. API Response Formats (Example)
 

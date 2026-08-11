@@ -31,7 +31,7 @@ Identify the live base URL for your service. The core services are mapped as fol
 *   **TANTRA (Gated Bridge):** `https://tantra-gated-bridge-infrastructure.onrender.com` (Owner: Ranjit Patil)
 *   **BUCKET (Provenance Store):** `https://bhiv-bucket-i1l6.onrender.com` (Owner: Siddhesh Narkar)
 *   **SANSKAR (Constitutional Convergence):** `https://full-tantra-constitutional-convergence.onrender.com` (Owner: Sakshi)
-*   **HARSHA (Reserved):** Setup `URL_HARSHA` in `runtime-services-widget.jsx` once available (Owner: Harsha Pawar)
+*   **HARSHA (SL Validator CET):** `https://sl-validator-cet.onrender.com` (Owner: Harsha Pawar)
 
 ### Step 3.2: Connecting Dashboard Components
 Replace synthetic mock updates with `apiFetch` or `apiPost` methods to pull data dynamically from the service registry:
