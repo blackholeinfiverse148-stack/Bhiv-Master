@@ -1,10 +1,21 @@
 {
-  "status": "healthy",
-  "service": "bhiv-prana",
-  "forwarding_enabled": true,
-  "mongodb": {
-    "mongodb_connected": true,
-    "database_name": "prana",
-    "connection_status": "connected"
+  "_metadata": {
+    "service": "PRANA",
+    "endpoint": "GET /health",
+    "url": "http://163.128.209.18:8103/health",
+    "method": "GET",
+    "http_status": 200,
+    "timestamp": "Not captured (probe performed during audit session August 2026)",
+    "verification": "LIVE / VERIFIED"
+  },
+  "response": {
+    "status": "healthy",
+    "service": "bhiv-prana",
+    "forwarding_enabled": true,
+    "mongodb": {
+      "mongodb_connected": true,
+      "database_name": "prana",
+      "connection_status": "connected"
+    }
   }
 }

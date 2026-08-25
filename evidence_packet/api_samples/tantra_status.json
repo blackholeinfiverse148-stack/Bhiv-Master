@@ -1,7 +1,13 @@
 {
-  "service": "TANTRA",
-  "url": "https://tantra-gated-bridge-infrastructure.onrender.com/health",
-  "http_status": 503,
-  "classification": "CONFIGURED / DEGRADED",
-  "note": "Render free tier instance spun down / Service Unavailable during audit probe."
+  "_metadata": {
+    "service": "TANTRA",
+    "endpoint": "GET /health",
+    "url": "https://tantra-gated-bridge-infrastructure.onrender.com/health",
+    "method": "GET",
+    "http_status": 503,
+    "timestamp": "Not captured (probe performed during audit session August 2026)",
+    "verification": "CONFIGURED / DEGRADED"
+  },
+  "response": null,
+  "note": "Render free tier instance spun down. HTTP 503 Service Unavailable returned during audit probe."
 }

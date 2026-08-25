@@ -13,7 +13,8 @@ It has no backend of its own. It calls external BHIV runtime service APIs direct
 from the browser. It displays live operational data across 9 dashboard tabs federated
 under a SHAKTI Master Gateway.
 
-Two tabs are fully live (Runtime Services, Bucket/Evidence).
+The Runtime Services tab connects to live APIs (4 verified, 3 degraded/unverified).
+The Bucket/Evidence tab is configured but currently degraded (HTTP 503).
 Seven tabs use demo data from Tests 1-3.
 
 ---

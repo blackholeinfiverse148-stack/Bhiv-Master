@@ -1,6 +1,6 @@
 # VM Deployment & Rollback Verification Status
 
-> **SUBMISSION AUDIT STATUS**: APPROVED FOR INDEPENDENT TESTING
+> **SUBMISSION TARGET**: APPROVED FOR INDEPENDENT TESTING
 
 ---
 
@@ -41,5 +41,5 @@ Required for execution:
 
 - **Lint Status**: `PASSED (0 ESLint errors)`
 - **Build Status**: `SUCCESS (Vite production bundle generated in dist/)`
-- **Bundle Hash**: `dist/assets/index-MLRoJwsD.js (759.22 kB)`
+- **Bundle Hash**: `dist/assets/index-CJr9wsDp.js (759.25 kB)`
 - **Commit Target**: Reviewed commit ready for deployment upon provision of target VM credentials.

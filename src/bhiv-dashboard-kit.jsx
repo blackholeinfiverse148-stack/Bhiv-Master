@@ -1,6 +1,6 @@
 /**
  * BHIV Dashboard Capability Starter Kit - Test 3
- * 
+ *
  * What this file contains (in order):
  * 1. Design tokens (DS object)
  * 2. Type definitions (JSDoc)
@@ -147,7 +147,7 @@ var MOCK = {
     { id: "burn", label: "Monthly Burn Rate", value: "1.82Cr", change: -3.2, up: true, icon: TrendingDown, spark: [2.1, 2.0, 1.98, 1.95, 1.92, 1.9, 1.88, 1.85, 1.84, 1.83, 1.82, 1.82] },
     { id: "run", label: "Runway", value: "19 mo", change: 2.0, up: true, icon: Target, spark: [14, 15, 15, 16, 16, 17, 17, 18, 18, 18, 19, 19] },
   ],
-  // SOC data  
+  // SOC data
   threats: [
     { id: "THR-001", title: "Brute force attempt - Admin portal", severity: "critical", source: "185.234.x.x", country: "RU", time: "2 min ago", status: "active" },
     { id: "THR-002", title: "Anomalous data exfiltration pattern", severity: "critical", source: "Internal", country: "IN", time: "14 min ago", status: "investigating" },
@@ -1106,22 +1106,22 @@ function Sidebar({ activeDash, setActiveDash }) {
       <div style={{ padding: "4px 8px 6px" }}>
         <div style={{ position: "relative" }}>
           <Search size={12} color={t.textMuted} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }} />
-          <input 
-            type="text" 
-            placeholder="Search dashboards..." 
-            value={search} 
-            onChange={function (e) { setSearch(e.target.value); }} 
-            style={{ 
-              width: "100%", 
-              padding: "5px 6px 5px 24px", 
-              fontSize: 11.5, 
-              background: t.surface, 
-              border: "1px solid " + t.border, 
-              borderRadius: DS.radius.sm, 
-              color: t.text, 
+          <input
+            type="text"
+            placeholder="Search dashboards..."
+            value={search}
+            onChange={function (e) { setSearch(e.target.value); }}
+            style={{
+              width: "100%",
+              padding: "5px 6px 5px 24px",
+              fontSize: 11.5,
+              background: t.surface,
+              border: "1px solid " + t.border,
+              borderRadius: DS.radius.sm,
+              color: t.text,
               outline: "none",
               fontFamily: DS.font.body
-            }} 
+            }}
           />
         </div>
       </div>
@@ -1131,17 +1131,17 @@ function Sidebar({ activeDash, setActiveDash }) {
           var exp = isExpanded(g.key);
           return (
             <div key={g.key} style={{ marginBottom: 12 }}>
-              <div 
+              <div
                 onClick={function () { toggleSection(g.key); }}
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "space-between", 
-                  fontSize: 9.5, 
-                  fontWeight: 700, 
-                  color: t.textMuted, 
-                  letterSpacing: "0.06em", 
-                  textTransform: "uppercase", 
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  fontSize: 9.5,
+                  fontWeight: 700,
+                  color: t.textMuted,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
                   padding: "4px 6px",
                   cursor: "pointer",
                   userSelect: "none"
@@ -1217,8 +1217,8 @@ function Topbar({ activeDash }) {
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         {activeDash !== "shakti" && (
           <>
-            <span 
-              onClick={function () { if (nav) nav.setActiveDash("shakti"); }} 
+            <span
+              onClick={function () { if (nav) nav.setActiveDash("shakti"); }}
               style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer", color: t.textSub, fontSize: 12.5, fontWeight: 600 }}
               onMouseEnter={function (e) { e.currentTarget.style.color = DS.accent.primary; }}
               onMouseLeave={function (e) { e.currentTarget.style.color = t.textSub; }}
@@ -1704,8 +1704,8 @@ function ShaktiMasterDashboard() {
   var [log, setLog] = useState([
     { time: "--:--:--", msg: "[PENDING] SHAKTI API federation not yet available — awaiting Pratik's widget registration format" },
     { time: "--:--:--", msg: "[UI] Runtime Services tab: PRANA, KARMA, RAJYA, BUCKET, SANSKAR connected to live APIs" },
-    { time: "--:--:--", msg: "[UI] Bucket tab: 100 real artifacts loaded from bhiv-bucket-i1l6.onrender.com" },
-    { time: "--:--:--", msg: "[BLOCKED] HARSHA (KSML/CET/SUM-SCRIPT): base URL not yet received from Harsha Pawar" },
+    { time: "--:--:--", msg: "[MONITORED] Bucket tab: bhiv-bucket-i1l6.onrender.com configured (probe returned 503 Render degraded)" },
+    { time: "--:--:--", msg: "[UNVERIFIED] HARSHA: https://sl-validator-cet.onrender.com configured (probe timed out)" },
     { time: "--:--:--", msg: "[BLOCKED] InsightFlow: endpoints not received from Vijay Dhawan" }
   ]);
 
@@ -1744,8 +1744,8 @@ function ShaktiMasterDashboard() {
     { name: "Finance Ledger", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "finance" },
     { name: "Analytics Node", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "analytics" },
     { name: "Gov Command Center", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "government" },
-    { name: "Bucket Provenance Store", type: "Live Service ✅", status: "live", delay: "real", hash: "from /chain-state", verdict: "Live", targetId: "bucket" },
-    { name: "Runtime Services", type: "Live Services ✅", status: "live", delay: "real", hash: "from KARMA", verdict: "Live", targetId: "runtime" }
+    { name: "Bucket Provenance Store", type: "Monitored Service", status: "degraded", delay: "503", hash: "CONFIGURED", verdict: "DEGRADED", targetId: "bucket" },
+    { name: "Runtime Services", type: "Mixed (4 live, 3 monitored)", status: "monitored", delay: "mixed", hash: "from KARMA", verdict: "PARTIAL", targetId: "runtime" }
   ];
 
   return (

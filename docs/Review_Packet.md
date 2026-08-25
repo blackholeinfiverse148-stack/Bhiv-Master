@@ -159,7 +159,7 @@ Dashboard:     Shows Type, Storage Type, Timestamp, Source Module, chain_verifie
 | API timeout | Request takes >8s | Timeout error + Retry | ✅ Implemented (AbortController) |
 | Empty response | API returns empty/null | Empty state with message | ✅ Implemented |
 | Malformed response | Unexpected JSON shape | Field shows "—", raw JSON toggle | ✅ Implemented |
-| HARSHA unavailable | URL_HARSHA = null | Waiting state with endpoint list | ✅ Implemented |
+| HARSHA unavailable | URL_HARSHA configured but unverified | Timeout state displayed | ✅ Implemented |
 | Node offline | Service unreachable | Red error card, other panels unaffected | ✅ Implemented (Promise.allSettled) |
 | Auth failure | 401/403 response | HTTP error code shown | ✅ Partially (no auth headers yet) |
 | Stale data | source.freshness = "stale" | Orange "stale" badge on source | ✅ Implemented in Bucket |
@@ -187,10 +187,10 @@ Dashboard:     Shows Type, Storage Type, Timestamp, Source Module, chain_verifie
 | PRANA | ✅ | ✅ | HTTP only |
 | KARMA | ✅ | ✅ | HTTP only |
 | RAJYA | ✅ | ✅ | None |
-| BUCKET | ✅ | ✅ | None |
-| SANSKAR | ✅ | Partial | Schema unknown |
-| TANTRA | ⚠️ | Partial | No endpoint docs |
-| HARSHA | 🔄 | No | URL not received |
+| BUCKET | ⚠️ | Degraded | HTTP 503 (Render asleep) |
+| SANSKAR | ✅ | ✅ Verified | Health HTTP 200 OK |
+| TANTRA | ⚠️ | Degraded | HTTP 503 (Render asleep) |
+| HARSHA | 🔄 | Unverified | URL configured; probe timed out |
 | InsightFlow | ❌ | No | No endpoints received |
 | SHAKTI API | ⚠️ | UI only | API format not received |
 
@@ -200,7 +200,7 @@ Dashboard:     Shows Type, Storage Type, Timestamp, Source Module, chain_verifie
 
 - [x] No hardcoded credentials in source files
 - [x] No secrets in frontend bundle (confirmed — only public API URLs)
-- [x] `URL_HARSHA = null` — intentional, not a secret
+- [x] `URL_HARSHA` — configured public Render URL, not a secret
 - [x] All API calls use fetch() with explicit headers only
 - [x] No eval(), no innerHTML with user data
 - [x] Dashboard observes and displays — does not create execution authority
@@ -217,8 +217,8 @@ Dashboard:     Shows Type, Storage Type, Timestamp, Source Module, chain_verifie
 ```
 Dependency:        Harsha Pawar's KSML/CET/SUM-SCRIPT service base URL
 Current state:     All 6 endpoints wired in HarshaPanel component
-                   URL_HARSHA = null (line 29, runtime-services-widget.jsx)
-Missing:           Base URL (e.g. https://harsha-service.onrender.com)
+                   URL_HARSHA = "https://sl-validator-cet.onrender.com" (line 29, runtime-services-widget.jsx)
+Status:            URL configured (https://sl-validator-cet.onrender.com); health probe timed out
 Impact:            HarshaPanel shows informational waiting state
                    6 endpoints listed, request body editor shown but inactive
 Next action:       Harsha Pawar to provide URL
@@ -259,10 +259,7 @@ Impact:  Federation is UI-navigable but not API-verified
 
 ## Commit SHA
 
-**[To be filled after git push]**
-
 ```
-Commit SHA: [run: git log --oneline -1]
+Commit SHA: see final commit (git log --oneline -1)
 Branch:     main
-Pushed:     [date]
 ```

@@ -1,4 +1,15 @@
 {
-  "status": "ok",
-  "service": "bhiv-enforcement-gateway"
+  "_metadata": {
+    "service": "RAJYA",
+    "endpoint": "GET /health",
+    "url": "https://text-risk-scoring-service.onrender.com/health",
+    "method": "GET",
+    "http_status": 200,
+    "timestamp": "Not captured (probe performed during audit session August 2026)",
+    "verification": "LIVE / VERIFIED"
+  },
+  "response": {
+    "status": "ok",
+    "service": "bhiv-enforcement-gateway"
+  }
 }

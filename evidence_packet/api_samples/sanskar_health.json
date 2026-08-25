@@ -1,5 +1,16 @@
 {
-  "status": "healthy",
-  "service": "sanskar",
-  "contract_version": "v1"
+  "_metadata": {
+    "service": "SANSKAR",
+    "endpoint": "GET /health",
+    "url": "https://full-tantra-constitutional-convergence.onrender.com/health",
+    "method": "GET",
+    "http_status": 200,
+    "timestamp": "Not captured (probe performed during audit session August 2026)",
+    "verification": "LIVE / HEALTH VERIFIED"
+  },
+  "response": {
+    "status": "healthy",
+    "service": "sanskar",
+    "contract_version": "v1"
+  }
 }

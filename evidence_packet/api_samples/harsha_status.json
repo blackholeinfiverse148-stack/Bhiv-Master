@@ -1,7 +1,14 @@
 {
-  "service": "HARSHA",
-  "url": "https://sl-validator-cet.onrender.com/health",
-  "classification": "CONFIGURED / UNVERIFIED",
-  "error": "Timed out after 20s",
-  "note": "Configured URL in source code is unreachable during audit probe."
+  "_metadata": {
+    "service": "HARSHA",
+    "endpoint": "GET /health",
+    "url": "https://sl-validator-cet.onrender.com/health",
+    "method": "GET",
+    "http_status": null,
+    "timestamp": "Not captured (probe performed during audit session August 2026)",
+    "verification": "CONFIGURED / UNVERIFIED"
+  },
+  "response": null,
+  "error": "Request timed out after >20 seconds",
+  "note": "URL configured in source code. Endpoint unreachable during audit probe."
 }

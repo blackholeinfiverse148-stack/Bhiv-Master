@@ -21,11 +21,11 @@ The **SHAKTI Master Dashboard** serves as the UI navigation hub with local node 
 | **Monitored Services** | Amber | Configured (3/7) | TANTRA (503), BUCKET (503), HARSHA (Timeout). |
 | **SHAKTI Federation Hub** | Amber | UI-Only | Local navigation hub; backend federation registry API pending. |
 | **InsightFlow Observability**| Red | Blocked | Canonical API contract unavailable. |
-| **Code Quality & Lint** | Green | 100% | 0 ESLint errors (`npm run lint`). |
-| **Production Build** | Green | 100% | Vite production bundle compiles cleanly (`npm run build`). |
+| **Code Quality & Lint** | Green | Verified | 0 ESLint errors (`npm run lint`). |
+| **Production Build** | Green | Verified | Vite production bundle compiles cleanly (`npm run build`). |
 
 ---
 
-## 3. Audit Certification
+## 3. Submission Status
 
-Repository approved for independent review and testing. Target status: **APPROVED FOR INDEPENDENT TESTING**.
+Repository prepared for independent review and testing. Target status: **APPROVED FOR INDEPENDENT TESTING**.

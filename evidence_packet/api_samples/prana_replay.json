@@ -1,9 +1,15 @@
 {
-  "trace_id": "niyantran-de3e832500ef49c0a6c252a7fe3ad0e3",
-  "endpoint": "http://163.128.209.18:8103/replay/niyantran-de3e832500ef49c0a6c252a7fe3ad0e3",
-  "status": "PARTIAL",
+  "_metadata": {
+    "service": "PRANA",
+    "endpoint": "GET /replay/{trace_id}",
+    "url": "http://163.128.209.18:8103/replay/niyantran-de3e832500ef49c0a6c252a7fe3ad0e3",
+    "method": "GET",
+    "http_status": 200,
+    "timestamp": "Not captured (probe performed during audit session August 2026)",
+    "verification": "BLOCKED / UNVERIFIED"
+  },
   "response": {
     "detail": "Replay not found"
   },
-  "note": "PRANA replay endpoint is live. Creation of full replay records depends on successful forwarding to Bucket (currently HTTP 503)."
+  "note": "PRANA replay endpoint is live and reachable. However, creation of full replay records depends on successful forwarding to Bucket, which returned HTTP 503 during audit. Replay proof remains BLOCKED / UNVERIFIED."
 }
