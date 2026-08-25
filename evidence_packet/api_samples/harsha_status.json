@@ -1,0 +1,7 @@
+{
+  "service": "HARSHA",
+  "url": "https://sl-validator-cet.onrender.com/health",
+  "classification": "CONFIGURED / UNVERIFIED",
+  "error": "Timed out after 20s",
+  "note": "Configured URL in source code is unreachable during audit probe."
+}

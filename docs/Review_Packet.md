@@ -57,7 +57,7 @@ command engine, 4 React Contexts, dark/light theme, design token system.
 
 ### File 2: `src/runtime-services-widget.jsx`
 **Purpose:** Live runtime integration. All 7 service panels, real API calls,
-8-second timeout, retry on failure, zero mock data.
+8-second timeout, retry on failure, deterministic health classification.
 **Key sections:**
 - Lines 19-29: Service URL constants (change URL_HARSHA here when received)
 - Lines 60-100: `apiGet()` and `apiPost()` with timeout

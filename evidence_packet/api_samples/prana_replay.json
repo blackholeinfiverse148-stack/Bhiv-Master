@@ -1,0 +1,9 @@
+{
+  "trace_id": "niyantran-de3e832500ef49c0a6c252a7fe3ad0e3",
+  "endpoint": "http://163.128.209.18:8103/replay/niyantran-de3e832500ef49c0a6c252a7fe3ad0e3",
+  "status": "PARTIAL",
+  "response": {
+    "detail": "Replay not found"
+  },
+  "note": "PRANA replay endpoint is live. Creation of full replay records depends on successful forwarding to Bucket (currently HTTP 503)."
+}

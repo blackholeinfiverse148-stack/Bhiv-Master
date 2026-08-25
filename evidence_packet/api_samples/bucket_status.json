@@ -1,0 +1,7 @@
+{
+  "service": "BUCKET",
+  "url": "https://bhiv-bucket-i1l6.onrender.com/health",
+  "http_status": 503,
+  "classification": "CONFIGURED / DEGRADED",
+  "note": "Render free tier instance spun down / Service Unavailable during audit probe."
+}

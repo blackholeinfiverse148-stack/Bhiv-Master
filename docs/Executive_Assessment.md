@@ -7,7 +7,7 @@
 ## 1. Executive Summary
 
 This assessment evaluates the readiness of the BHIV-ECC Dashboard Kit v3.
-All core services (except HARSHA) have been successfully integrated with live runtime APIs. Placeholder data has been removed from the provenance store and runtime check panels.
+All core services (except HARSHA) have been successfully integrated with live runtime APIs. Live microservices are verified while demonstration dashboards operate with explicit UI indicators.
 The federation registry is operational under the **SHAKTI Master Dashboard**, which guarantees deterministic state synchronization and cryptographic chain validation.
 
 ## 2. Integration Status Dashboard

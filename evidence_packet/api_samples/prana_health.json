@@ -1,0 +1,10 @@
+{
+  "status": "healthy",
+  "service": "bhiv-prana",
+  "forwarding_enabled": true,
+  "mongodb": {
+    "mongodb_connected": true,
+    "database_name": "prana",
+    "connection_status": "connected"
+  }
+}

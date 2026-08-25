@@ -439,21 +439,210 @@ function StatPill({ label, val, color }) {
 
 // ─────────────────────────────────────────────────────────────
 // 8. WIDGET COMPONENTS
-// ──�function ThreatCard({ threat, t }) {
-  var sevColor = { critical: DS.status.critical, warning: DS.status.warning, info: DS.status.info }[threat.severity] || DS.status.neutral;
+
+export function UiOnlyDemoBanner({ label }) {
   return (
-    <div style={{ padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + (threat.severity === "critical" ? DS.status.critical + "44" : t.border), background: threat.severity === "critical" ? DS.status.critical + "07" : t.bgElevated, animation: "fadeIn .2s ease" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <StatusDot s={threat.severity} pulse={threat.severity === "critical"} />
-        <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted, flex: 1 }}>{threat.id}</span>
-        <StatusBadge status={threat.status} />
-        <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: sevColor }}>{threat.time}</span>
-      </div>
-      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{threat.title}</div>
-      <div style={{ fontSize: 10, color: t.textSub, marginTop: 3 }}>Source: {threat.source} ({threat.country})</div>
+    <div style={{
+      background: "rgba(245, 158, 11, 0.1)",
+      border: "1px solid rgba(245, 158, 11, 0.3)",
+      borderRadius: 6,
+      padding: "5px 12px",
+      fontSize: 10.5,
+      fontFamily: DS.font.mono,
+      color: DS.status.warning,
+      marginBottom: 14,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6
+    }}>
+      <span>⚠️</span>
+      <strong>UI-ONLY DEMONSTRATION</strong>
+      <span style={{ color: "#8892A6" }}>— {label || "Local mock telemetry mode (Not connected to live BHIV backend)"}</span>
     </div>
   );
-},
+}
+// ─────────────────────────────────────────────────────────────
+
+function KpiCard({ k, t, loading }) {
+  var c = k.up ? DS.status.healthy : DS.status.critical;
+  if (loading) return <Card t={t} p={12} loading={true} />;
+  return (
+    <Card t={t} p={12} style={{ animation: "fadeIn .3s ease" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 11, color: t.textSub, fontWeight: 500 }}>{k.label}</div>
+        <k.icon size={13} color={t.textMuted} />
+      </div>
+      <div style={{ fontFamily: DS.font.mono, fontSize: 20, fontWeight: 700, margin: "4px 0 2px" }}>{k.value}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 6 }}>
+        {k.up ? <ArrowUpRight size={11} color={c} /> : <ArrowDownRight size={11} color={c} />}
+        <span style={{ fontSize: 10.5, color: c, fontFamily: DS.font.mono, fontWeight: 600 }}>{Math.abs(k.change)}%</span>
+        <span style={{ fontSize: 9.5, color: t.textMuted }}>vs last period</span>
+      </div>
+      <Sparkline data={k.spark} color={c} height={26} />
+    </Card>
+  );
+}
+
+function MetricCard({ t, label, value, icon, note, color, variant, loading }) {
+  var Icon = icon;
+  if (loading) return <Card t={t} p={12} loading={true} />;
+  return (
+    <Card t={t} p={12}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontSize: 11, color: t.textSub }}>{label}</div>
+        {Icon && <Icon size={13} color={color || t.textMuted} />}
+      </div>
+      <div style={{ fontFamily: DS.font.mono, fontSize: variant === "large" ? 24 : 19, fontWeight: 700, margin: "4px 0 2px", color: color || t.text }}>{value}</div>
+      {note && <div style={{ fontSize: 10.5, color: t.textMuted }}>{note}</div>}
+    </Card>
+  );
+}
+
+export function AlertCard({ a, t, addAudit, addNotif }) {
+  var silenceCmd = useCommand({ label: "Silence " + a.id, serviceCall: function () { return MockService.silenceAlert(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " silenced", severity: "info" }); } });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: DS.radius.md, border: "1px solid " + (a.severity === "critical" ? DS.status.critical + "44" : t.border), background: t.bgElevated, animation: "fadeIn .2s ease" }}>
+      <StatusDot s={a.severity} pulse={a.severity === "critical"} />
+      <span style={{ fontSize: 10, fontFamily: DS.font.mono, color: t.textMuted, width: 70, flexShrink: 0 }}>{a.id}</span>
+      <span style={{ fontSize: 12, flex: 1 }}>{a.title}</span>
+      <span style={{ fontSize: 10, background: t.surfaceHover, padding: "2px 6px", borderRadius: 99, color: t.textSub, flexShrink: 0 }}>{a.owner}</span>
+      <span style={{ fontSize: 10, fontFamily: DS.font.mono, color: t.textMuted, width: 60, textAlign: "right", flexShrink: 0 }}>{a.age}</span>
+      <CommandDialog cmd={silenceCmd} label={"Silence " + a.id} description={"Silence notifications for \"" + a.title + "\" for 30 minutes."} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Ban size={10} /></Btn>; }} />
+    </div>
+  );
+}
+
+function IncidentCard({ inc, t, addAudit, addNotif }) {
+  var ackCmd = useCommand({ label: "Acknowledge " + inc.id, serviceCall: function () { return MockService.acknowledgeAlert(inc.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: inc.id + " acknowledged", severity: "info" }); } });
+  var escCmd = useCommand({ label: "Escalate " + inc.id, serviceCall: function () { return MockService.escalateIncident(inc.id); }, canRollback: true, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: inc.id + " escalated", severity: "warning" }); } });
+  return (
+    <div style={{ padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + (inc.severity === "critical" ? DS.status.critical + "44" : t.border), background: inc.severity === "critical" ? DS.status.critical + "07" : t.surface, animation: "fadeIn .2s ease" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+        <StatusDot s={inc.severity} pulse={inc.severity === "critical"} />
+        <div style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted, flex: 1 }}>{inc.id} - {inc.owner} - {inc.age}</div>
+        <StatusBadge status={inc.status} />
+      </div>
+      <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 7 }}>{inc.title}</div>
+      <div style={{ display: "flex", gap: 5 }}>
+        <CommandDialog cmd={escCmd} label={"Escalate " + inc.id} description={"Escalate \"" + inc.title + "\" to leadership. All on-call engineers will be paged."} canRollback={true} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Siren size={11} /> Escalate</Btn>; }} />
+        {inc.status !== "resolved" && <CommandDialog cmd={ackCmd} label={"Acknowledge " + inc.id} description={"Acknowledge \"" + inc.title + "\". You are taking ownership."} trigger={function (p) { return <Btn variant="primary" t={t} small onClick={p.onClick}><Eye size={11} /> Acknowledge</Btn>; }} />}
+      </div>
+    </div>
+  );
+}
+
+function ApprovalCard({ a, t, addAudit, addNotif, onDismiss }) {
+  var approveCmd = useCommand({ label: "Approve " + a.id, serviceCall: function () { return MockService.approveRequest(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " approved", severity: "info" }); if (onDismiss) onDismiss(); } });
+  var rejectCmd = useCommand({ label: "Reject " + a.id, serviceCall: function () { return MockService.rejectRequest(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " rejected", severity: "warning" }); if (onDismiss) onDismiss(); } });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + t.border, background: t.surface }}>
+      <PriorityIcon p={a.priority} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted }}>{a.id} - {a.type}</div>
+        <div style={{ fontSize: 12, fontWeight: 600 }}>{a.title}</div>
+        <div style={{ fontSize: 10.5, color: t.textSub }}>{a.requester} - {a.dept} - {a.age}</div>
+      </div>
+      <div style={{ display: "flex", gap: 5 }}>
+        <CommandDialog cmd={rejectCmd} label={"Reject: " + a.id} description={"Reject \"" + a.title + "\" from " + a.requester + "."} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Ban size={11} /> Reject</Btn>; }} />
+        <CommandDialog cmd={approveCmd} label={"Approve: " + a.id} description={"Approve \"" + a.title + "\" from " + a.requester + " (" + a.dept + "). Confirm policy compliance."} trigger={function (p) { return <Btn variant="success" t={t} small onClick={p.onClick}><CheckSquare size={11} /> Approve</Btn>; }} />
+      </div>
+    </div>
+  );
+}
+
+function HealthCard({ s, t, addAudit, addNotif }) {
+  var restartCmd = useCommand({ label: "Restart " + s.name, serviceCall: function () { return MockService.restartService(s.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: s.name + " restart " + (e.status === "success" ? "complete" : "failed"), severity: e.status === "success" ? "info" : "critical" }); } });
+  return (
+    <div style={{ padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + (s.status === "critical" ? DS.status.critical + "55" : t.border), background: t.surface }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+        <s.icon size={13} color={t.textSub} />
+        <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{s.name}</span>
+        <StatusDot s={s.status} pulse={s.status !== "healthy"} />
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: s.status !== "healthy" ? 8 : 0 }}>
+        <div style={{ fontSize: 10, fontFamily: DS.font.mono }}><span style={{ color: t.textMuted }}>LAT </span>{s.latency}</div>
+        <div style={{ fontSize: 10, fontFamily: DS.font.mono }}><span style={{ color: t.textMuted }}>UP </span>{s.uptime}</div>
+        <div style={{ fontSize: 10, fontFamily: DS.font.mono }}><span style={{ color: t.textMuted }}>RPM </span>{s.rpm.toLocaleString()}</div>
+      </div>
+      {s.status !== "healthy" && <CommandDialog cmd={restartCmd} label={"Restart: " + s.name} description={"Restart \"" + s.name + "\". Brief interruption expected."} trigger={function (p) { return <Btn variant="danger" t={t} small onClick={p.onClick} style={{ width: "100%", justifyContent: "center" }}><RefreshCw size={11} /> Restart service</Btn>; }} />}
+    </div>
+  );
+}
+
+function OpCard({ op, t, addAudit }) {
+  var pauseCmd = useCommand({ label: "Pause " + op.id, serviceCall: function () { return MockService.pauseOperation(op.id); }, canRollback: true, onAudit: addAudit });
+  var stopCmd = useCommand({ label: "Stop " + op.id, serviceCall: function () { return MockService.stopOperation(op.id); }, onAudit: addAudit });
+  return (
+    <div style={{ padding: "12px", borderRadius: DS.radius.md, border: "1px solid " + t.border, background: t.surface }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
+        <div style={{ width: 6, height: 6, borderRadius: 99, background: DS.status.healthy, animation: "blink 1.4s ease infinite", flexShrink: 0 }} />
+        <div style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted }}>{op.id}</div>
+        <div style={{ fontSize: 9.5, color: t.textMuted, marginLeft: "auto", fontFamily: DS.font.mono }}>{op.elapsed}</div>
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{op.title}</div>
+      <MiniProgress val={op.progress} t={t} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+        <div style={{ fontSize: 10, color: t.textMuted }}>{op.startedBy}</div>
+        <div style={{ display: "flex", gap: 5 }}>
+          <CommandDialog cmd={pauseCmd} label={"Pause " + op.id} description={"Pause \"" + op.title + "\". Can be resumed from Operations."} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Pause size={10} /></Btn>; }} />
+          <CommandDialog cmd={stopCmd} label={"Stop " + op.id} description={"Stop \"" + op.title + "\" permanently. Progress will be lost."} trigger={function (p) { return <Btn variant="danger" t={t} small onClick={p.onClick}><StopCircle size={10} /></Btn>; }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TimelineCard({ t }) {
+  return (
+    <Card t={t} p={14}>
+      {MOCK.activityFeed.map(function (e, i) {
+        return (
+          <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < MOCK.activityFeed.length - 1 ? "1px solid " + t.border : "none" }}>
+            <div style={{ width: 24, height: 24, borderRadius: 6, background: t.surfaceHover, border: "1px solid " + t.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <e.icon size={12} color={t.textSub} />
+            </div>
+            <div style={{ flex: 1, fontSize: 12 }}>{e.text}</div>
+            <div style={{ fontSize: 9.5, color: t.textMuted, fontFamily: DS.font.mono, whiteSpace: "nowrap" }}>{e.time}</div>
+          </div>
+        );
+      })}
+    </Card>
+  );
+}
+
+function SystemPulseWidget({ t }) {
+  var score = 73;
+  var s = score > 85 ? "healthy" : score > 65 ? "warning" : "critical";
+  var vals = [62, 66, 70, 64, 58, 61, 67, 72, 69, 73].map(function (v, i) { return { i: i, v: v }; });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 10px", borderRadius: 99, background: t.surface, border: "1px solid " + t.border }}>
+      <StatusDot s={s} pulse />
+      <span style={{ fontSize: 9.5, color: t.textMuted, fontFamily: DS.font.mono }}>SYS PULSE</span>
+      <div style={{ width: 56, height: 16 }}>
+        <ResponsiveContainer width="100%" height={16}>
+          <AreaChart data={vals} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id="syspulse" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={DS.status[s]} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={DS.status[s]} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Area type="monotone" dataKey="v" stroke={DS.status[s]} strokeWidth={1.5} fill="url(#syspulse)" dot={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <span style={{ fontSize: 10.5, fontFamily: DS.font.mono, fontWeight: 700, color: DS.status[s] }}>{score}</span>
+    </div>
+  );
+}
+
+function SituationBar({ t }) {
+  var items = [
+    { label: "Critical alerts", val: 2, color: DS.status.critical, icon: AlertOctagon },
+    { label: "Pending approvals", val: 4, color: DS.status.warning, icon: ClipboardCheck },
+    { label: "Running ops", val: 3, color: DS.accent.primary, icon: Activity },
+    { label: "Services degraded", val: 2, color: DS.status.critical, icon: Server },
+    { label: "System uptime", val: "99.94%", color: DS.status.healthy, icon: CheckCircle2 },
     { label: "Deploy pipeline", val: "OK", color: DS.status.healthy, icon: GitBranch },
   ];
   return (
@@ -481,7 +670,7 @@ function ThreatCard({ threat, t }) {
         <StatusDot s={threat.severity} pulse={threat.severity === "critical"} />
         <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted, flex: 1 }}>{threat.id}</span>
         <StatusBadge status={threat.status} />
-        <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted }}>{threat.time}</span>
+        <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: sevColor }}>{threat.time}</span>
       </div>
       <div style={{ fontSize: 12.5, fontWeight: 600 }}>{threat.title}</div>
       <div style={{ fontSize: 10, color: t.textSub, marginTop: 3 }}>Source: {threat.source} ({threat.country})</div>
@@ -490,7 +679,7 @@ function ThreatCard({ threat, t }) {
 }
 
 // ExecutiveMetricCard - large format for board-level metrics
-function ExecutiveMetricCard({ t, label, value, change, up, note, color }) {
+export function ExecutiveMetricCard({ t, label, value, change, up, note, color }) {
   var c = color || (up ? DS.status.healthy : DS.status.critical);
   return (
     <Card t={t} p={16}>
@@ -509,7 +698,7 @@ function ExecutiveMetricCard({ t, label, value, change, up, note, color }) {
 }
 
 // WorkflowCard - shows a multi-step process with current step highlighted
-function WorkflowCard({ t, title, steps, currentStep }) {
+export function WorkflowCard({ t, title, steps, currentStep }) {
   return (
     <Card t={t} p={14}>
       <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 12 }}>{title}</div>
@@ -538,7 +727,7 @@ function WorkflowCard({ t, title, steps, currentStep }) {
 }
 
 // ReplayCard - shows a past event that can be replayed or reviewed
-function ReplayCard({ t, event }) {
+export function ReplayCard({ t, event }) {
   return (
     <Card t={t} p={14}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -560,7 +749,7 @@ function ReplayCard({ t, event }) {
 }
 
 // TelemetryCard - real-time telemetry value with threshold indicator
-function TelemetryCard({ t, label, value, unit, threshold, thresholdLabel, status }) {
+export function TelemetryCard({ t, label, value, unit, threshold, thresholdLabel, status }) {
   var s = status || "healthy";
   var c = DS.status[s] || DS.status.neutral;
   var pct = threshold ? Math.min(100, Math.round((parseFloat(value) / threshold) * 100)) : null;
@@ -1460,7 +1649,7 @@ function GovernmentDashboard() {
 // ─────────────────────────────────────────────────────────────
 // 15. AUDIT LOG TABLE
 // ─────────────────────────────────────────────────────────────
-function AuditLogTable() {
+export function AuditLogTable() {
   var t = useTheme().t;
   var auditLog = useAudit().auditLog;
   var cols = ["Command", "Target", "Status", "Actor", "Time"];
@@ -1503,6 +1692,7 @@ function AuditLogTable() {
 // 15.5. SHAKTI MASTER DASHBOARD (FEDERATED OBSERVABILITY GATE)
 // ─────────────────────────────────────────────────────────────
 function ShaktiMasterDashboard() {
+  // Render UI-Only Banner at top of Shakti Master
   var t = useTheme().t;
   var addAudit = useAudit().addAudit;
   var addNotif = useNotif().addNotif;

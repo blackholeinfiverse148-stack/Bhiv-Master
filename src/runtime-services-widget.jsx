@@ -81,6 +81,48 @@ function apiPost(baseUrl, path, body) {
   });
 }
 
+// ── Deterministic Health States ────────────────────────────────────────────────
+const HEALTH_STATES = {
+  CHECKING: "CHECKING",
+  HEALTHY: "HEALTHY",
+  DEGRADED: "DEGRADED",
+  OFFLINE: "OFFLINE",
+  TIMEOUT: "TIMEOUT",
+  AUTH_FAILED: "AUTH_FAILED",
+  EMPTY_RESPONSE: "EMPTY_RESPONSE",
+  INVALID_RESPONSE: "INVALID_RESPONSE",
+  UNKNOWN: "UNKNOWN",
+};
+
+async function checkServiceHealth(baseUrl, path = "/health") {
+  if (!baseUrl) return HEALTH_STATES.UNKNOWN;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(baseUrl + path, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.status === 401 || res.status === 403) return HEALTH_STATES.AUTH_FAILED;
+    if (res.status >= 500) return HEALTH_STATES.DEGRADED;
+    if (!res.ok) return HEALTH_STATES.UNKNOWN;
+    const text = await res.text();
+    if (!text || !text.trim()) return HEALTH_STATES.EMPTY_RESPONSE;
+    let data;
+    try { data = JSON.parse(text); } catch { return HEALTH_STATES.INVALID_RESPONSE; }
+    if (data && typeof data === "object") {
+      const statusVal = String(data.status || data.state || "").toLowerCase();
+      if (["healthy", "ok", "running", "up", "active", "online", "operational"].includes(statusVal)) {
+        return HEALTH_STATES.HEALTHY;
+      }
+      if (data.service || data.name || data.version) return HEALTH_STATES.HEALTHY;
+    }
+    return HEALTH_STATES.UNKNOWN;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") return HEALTH_STATES.TIMEOUT;
+    return HEALTH_STATES.OFFLINE;
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtTime(val) {
   if (!val) return null;
@@ -319,20 +361,25 @@ function OverviewStrip({ services }) {
       background: C.elevated,
       marginBottom: 16,
     }}>
-      {services.map(({ name, ok, pending, color }) => (
-        <div key={name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          {pending
-            ? <Spin size={8} />
-            : <Dot ok={ok} pulse={ok} />
-          }
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color, lineHeight: 1 }}>{name}</div>
-            <div style={{ fontSize: 9, color: C.textMuted, marginTop: 1 }}>
-              {pending ? "checking..." : ok ? "healthy" : "degraded"}
+      {services.map(({ name, state, color }) => {
+        const isChecking = state === HEALTH_STATES.CHECKING;
+        const isHealthy = state === HEALTH_STATES.HEALTHY;
+        const stateColor = isHealthy ? C.ok : (isChecking ? C.textMuted : C.crit);
+        return (
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            {isChecking
+              ? <Spin size={8} />
+              : <Dot ok={isHealthy} pulse={isHealthy} />
+            }
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color, lineHeight: 1 }}>{name}</div>
+              <div style={{ fontSize: 9, color: stateColor, marginTop: 1, fontFamily: MONO, fontWeight: 600 }}>
+                {state || HEALTH_STATES.CHECKING}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1168,30 +1215,35 @@ function ReplayPanel() {
 // ── Root export ───────────────────────────────────────────────────────────────
 export default function RuntimeServicesWidget() {
   const [status, setStatus] = useState({
-    prana: null, karma: null, rajya: true,
-    tantra: null, bucket: null, sanskar: null,
-    harsha: URL_HARSHA ? null : undefined,
+    prana:   HEALTH_STATES.CHECKING,
+    karma:   HEALTH_STATES.CHECKING,
+    rajya:   HEALTH_STATES.CHECKING,
+    tantra:  HEALTH_STATES.CHECKING,
+    bucket:  HEALTH_STATES.CHECKING,
+    sanskar: HEALTH_STATES.CHECKING,
+    harsha:  URL_HARSHA ? HEALTH_STATES.CHECKING : HEALTH_STATES.UNKNOWN,
   });
 
   useEffect(() => {
-    apiGet(URL_PRANA,   "/health").then(d => setStatus(p => ({ ...p, prana:   isHealthyStatus(d?.status) }))).catch(() => setStatus(p => ({ ...p, prana:   false })));
-    apiGet(URL_KARMA,   "/health").then(d => setStatus(p => ({ ...p, karma:   isHealthyStatus(d?.status) }))).catch(() => setStatus(p => ({ ...p, karma:   false })));
-    apiGet(URL_TANTRA,  "/health").then(d => setStatus(p => ({ ...p, tantra:  !!d }))).catch(() => setStatus(p => ({ ...p, tantra:  false })));
-    apiGet(URL_BUCKET,  "/health").then(d => setStatus(p => ({ ...p, bucket:  isHealthyStatus(d?.status) }))).catch(() => setStatus(p => ({ ...p, bucket:  false })));
-    apiGet(URL_SANSKAR, "/health").then(d => setStatus(p => ({ ...p, sanskar: isHealthyStatus(d?.status) || !!d }))).catch(() => setStatus(p => ({ ...p, sanskar: false })));
+    checkServiceHealth(URL_PRANA,   "/health").then(st => setStatus(p => ({ ...p, prana:   st })));
+    checkServiceHealth(URL_KARMA,   "/health").then(st => setStatus(p => ({ ...p, karma:   st })));
+    checkServiceHealth(URL_RAJYA,   "/health").then(st => setStatus(p => ({ ...p, rajya:   st })));
+    checkServiceHealth(URL_TANTRA,  "/health").then(st => setStatus(p => ({ ...p, tantra:  st })));
+    checkServiceHealth(URL_BUCKET,  "/health").then(st => setStatus(p => ({ ...p, bucket:  st })));
+    checkServiceHealth(URL_SANSKAR, "/health").then(st => setStatus(p => ({ ...p, sanskar: st })));
     if (URL_HARSHA) {
-      apiGet(URL_HARSHA, "/health").then(d => setStatus(p => ({ ...p, harsha: !!d }))).catch(() => setStatus(p => ({ ...p, harsha: false })));
+      checkServiceHealth(URL_HARSHA, "/health").then(st => setStatus(p => ({ ...p, harsha: st })));
     }
   }, []);
 
   const overviewServices = [
-    { name: "PRANA",   ok: status.prana,   pending: status.prana   === null, color: C.teal   },
-    { name: "KARMA",   ok: status.karma,   pending: status.karma   === null, color: C.purple  },
-    { name: "RAJYA",   ok: status.rajya,   pending: false,                   color: C.warn    },
-    { name: "TANTRA",  ok: status.tantra,  pending: status.tantra  === null, color: C.info    },
-    { name: "BUCKET",  ok: status.bucket,  pending: status.bucket  === null, color: C.ok      },
-    { name: "SANSKAR", ok: status.sanskar, pending: status.sanskar === null, color: C.orange  },
-    { name: "HARSHA",  ok: status.harsha,  pending: status.harsha  === null, color: C.teal    },
+    { name: "PRANA",   state: status.prana,   color: C.teal   },
+    { name: "KARMA",   state: status.karma,   color: C.purple },
+    { name: "RAJYA",   state: status.rajya,   color: C.warn   },
+    { name: "TANTRA",  state: status.tantra,  color: C.info   },
+    { name: "BUCKET",  state: status.bucket,  color: C.ok     },
+    { name: "SANSKAR", state: status.sanskar, color: C.orange },
+    { name: "HARSHA",  state: status.harsha,  color: C.teal   },
   ];
 
   return (
@@ -1216,7 +1268,7 @@ export default function RuntimeServicesWidget() {
         <div>
           <div style={{ fontWeight: 700, fontSize: 14.5 }}>BHIV Runtime Services</div>
           <div style={{ fontSize: 10.5, color: C.textMuted }}>
-            Live integration — PRANA · KARMA · RAJYA · TANTRA · BUCKET · SANSKAR · KSML/CET/SUM-SCRIPT
+            Runtime Telemetry — PRANA · KARMA · RAJYA · TANTRA · BUCKET · SANSKAR · HARSHA
           </div>
         </div>
         <div style={{ marginLeft: "auto", fontSize: 10, color: C.textMuted, fontFamily: MONO }}>
@@ -1257,11 +1309,9 @@ export default function RuntimeServicesWidget() {
         border: "1px solid " + C.border, background: C.elevated,
         fontSize: 11, color: C.textMuted, lineHeight: 1.7,
       }}>
-        <span style={{ color: C.accent, fontWeight: 600 }}>All live endpoints — zero mock data: </span>
-        PRANA ({URL_PRANA}) · KARMA ({URL_KARMA}) · RAJYA (text-risk-scoring-service.onrender.com) ·
-        TANTRA (tantra-gated-bridge-infrastructure.onrender.com) · BUCKET (bhiv-bucket-i1l6.onrender.com) ·
-        SANSKAR (full-tantra-constitutional-convergence.onrender.com) · HARSHA ({URL_HARSHA}).
-
+        <span style={{ color: C.accent, fontWeight: 600 }}>Runtime Service Integration Status: </span>
+        Verified Endpoints — PRANA (${URL_PRANA}) · KARMA (${URL_KARMA}) · RAJYA (${URL_RAJYA}) · SANSKAR (${URL_SANSKAR}).
+        Monitored/Configured Endpoints — TANTRA (${URL_TANTRA}) · BUCKET (${URL_BUCKET}) · HARSHA (${URL_HARSHA}).
       </div>
     </div>
   );
