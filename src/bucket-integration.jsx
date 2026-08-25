@@ -199,11 +199,9 @@ function HealthPanel() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      // Fetch all three health endpoints in parallel
-      // If any individual one fails we still show what we got
       const results = await Promise.allSettled([
         apiFetch("/health"),
         apiFetch("/bucket/chain-state"),
@@ -212,7 +210,6 @@ function HealthPanel() {
       if (results[0].status === "fulfilled") setHealth(results[0].value);
       if (results[1].status === "fulfilled") setChain(results[1].value);
       if (results[2].status === "fulfilled") setStats(results[2].value);
-      // If all three failed, throw so we show the error state
       if (results.every(r => r.status === "rejected")) {
         throw new Error(results[0].reason?.message || "All health endpoints failed");
       }
@@ -220,7 +217,24 @@ function HealthPanel() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiFetch("/health"),
+      apiFetch("/bucket/chain-state"),
+      apiFetch("/bucket/storage-stats"),
+    ]).then(results => {
+      if (!active) return;
+      if (results[0].status === "fulfilled") setHealth(results[0].value);
+      if (results[1].status === "fulfilled") setChain(results[1].value);
+      if (results[2].status === "fulfilled") setStats(results[2].value);
+      if (results.every(r => r.status === "rejected")) {
+        setError(results[0].reason?.message || "All health endpoints failed");
+      }
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   if (loading) return (
     <Card>
@@ -229,7 +243,7 @@ function HealthPanel() {
       </div>
     </Card>
   );
-  if (error && !health && !chain) return <Card><ErrBox msg={error} onRetry={load} /></Card>;
+  if (error && !health && !chain) return <Card><ErrBox msg={error} onRetry={handleRefresh} /></Card>;
 
   // Resolve status
   // From screenshots: health returns { status: "...", service: "bucket", storage: {...} }
@@ -324,11 +338,10 @@ function ArtifactList({ onSelect, selectedId }) {
   const [search,    setSearch]    = useState("");
   const [filter,    setFilter]    = useState("all");
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
     try {
       const raw = await apiFetch("/bucket/artifacts?limit=100");
-      // Handle every possible response shape
       let list = [];
       if (Array.isArray(raw))               list = raw;
       else if (Array.isArray(raw.artifacts))list = raw.artifacts;
@@ -336,7 +349,6 @@ function ArtifactList({ onSelect, selectedId }) {
       else if (Array.isArray(raw.data))     list = raw.data;
       else if (Array.isArray(raw.results))  list = raw.results;
       else {
-        // Maybe the API wraps in an object with a single array key
         const firstArrayKey = Object.keys(raw).find(k => Array.isArray(raw[k]));
         if (firstArrayKey) list = raw[firstArrayKey];
       }
@@ -345,7 +357,29 @@ function ArtifactList({ onSelect, selectedId }) {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    apiFetch("/bucket/artifacts?limit=100").then(raw => {
+      if (!active) return;
+      let list = [];
+      if (Array.isArray(raw))               list = raw;
+      else if (Array.isArray(raw.artifacts))list = raw.artifacts;
+      else if (Array.isArray(raw.items))    list = raw.items;
+      else if (Array.isArray(raw.data))     list = raw.data;
+      else if (Array.isArray(raw.results))  list = raw.results;
+      else {
+        const firstArrayKey = Object.keys(raw).find(k => Array.isArray(raw[k]));
+        if (firstArrayKey) list = raw[firstArrayKey];
+      }
+      setArtifacts(list);
+      setLoading(false);
+    }).catch(e => {
+      if (!active) return;
+      setError(e.message);
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   // Get unique types for filter tabs
   const types = ["all", ...new Set(
@@ -373,7 +407,7 @@ function ArtifactList({ onSelect, selectedId }) {
             {loading ? "loading..." : `${filtered.length} / ${artifacts.length}`}
           </span>
         </span>
-        <button onClick={load} style={{
+        <button onClick={handleRefresh} style={{
           fontSize: 11, padding: "3px 10px", borderRadius: 6,
           border: `1px solid ${C.border}`, background: "transparent",
           color: C.textMuted, cursor: "pointer",
@@ -413,7 +447,7 @@ function ArtifactList({ onSelect, selectedId }) {
           <Spinner /> Fetching artifacts from Bucket...
         </div>
       )}
-      {error && <ErrBox msg={error} onRetry={load} />}
+      {error && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       {/* List */}
       {!loading && !error && (
@@ -499,7 +533,7 @@ function ArtifactDetail({ artifactId, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     if (!artifactId) return;
     setLoading(true); setError(null); setData(null);
     try {
@@ -509,7 +543,20 @@ function ArtifactDetail({ artifactId, onClose }) {
     finally { setLoading(false); }
   }, [artifactId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!artifactId) return;
+    let active = true;
+    apiFetch(`/bucket/artifact/${encodeURIComponent(artifactId)}`).then(res => {
+      if (!active) return;
+      setData(res);
+      setLoading(false);
+    }).catch(e => {
+      if (!active) return;
+      setError(e.message);
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, [artifactId]);
 
   if (!artifactId) return (
     <Card style={{
@@ -544,7 +591,7 @@ function ArtifactDetail({ artifactId, onClose }) {
         <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1 }}>
           Artifact Detail
         </span>
-        <button onClick={load} style={{
+        <button onClick={handleRefresh} style={{
           fontSize: 10.5, padding: "3px 9px", borderRadius: 6,
           border: `1px solid ${C.border}`, background: "transparent",
           color: C.textMuted, cursor: "pointer",
@@ -577,7 +624,7 @@ function ArtifactDetail({ artifactId, onClose }) {
           <Spinner /> Loading artifact data...
         </div>
       )}
-      {error && <ErrBox msg={error} onRetry={load} />}
+      {error && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       {/* Data */}
       {data && !loading && (

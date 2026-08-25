@@ -64,7 +64,7 @@ async function apiFetch(baseUrl, path, options) {
     return await res.json();
   } catch (e) {
     clearTimeout(timer);
-    if (e.name === "AbortError") throw new Error("Timed out after 8s");
+    if (e.name === "AbortError") throw new Error("Timed out after 8s", { cause: e });
     throw e;
   }
 }
@@ -346,7 +346,7 @@ function PranaPanel() {
   const [error,    setError]    = useState(null);
   const [tab,      setTab]      = useState("health");
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
     const [h, s, p] = await Promise.allSettled([
       apiGet(URL_PRANA, "/health"),
@@ -360,7 +360,22 @@ function PranaPanel() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiGet(URL_PRANA, "/health"),
+      apiGet(URL_PRANA, "/prana/system/health"),
+      apiGet(URL_PRANA, "/prana/propagation-log?limit=20"),
+    ]).then(([h, s, p]) => {
+      if (!active) return;
+      if (h.status === "fulfilled") setHealth(h.value);
+      if (s.status === "fulfilled") setSysInfo(s.value);
+      if (p.status === "fulfilled") setPropLog(p.value);
+      if (h.status === "rejected" && s.status === "rejected") setError(h.reason?.message || "PRANA unreachable");
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const isOk = isHealthyStatus(health?.status) || isHealthyStatus(sysInfo?.status);
   const mongoOk = health?.mongodb?.mongodb_connected;
@@ -370,7 +385,7 @@ function PranaPanel() {
       <PanelHeader
         icon="🧬" title="PRANA — Event Forwarding"
         subtitle={URL_PRANA} color={C.teal}
-        right={<RefBtn onClick={load} loading={loading} />}
+        right={<RefBtn onClick={handleRefresh} loading={loading} />}
       />
 
       <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
@@ -386,7 +401,7 @@ function PranaPanel() {
       </div>
 
       {loading && <LoadRow text="Fetching PRANA health..." />}
-      {error && !health && !sysInfo && <ErrBox msg={error} onRetry={load} />}
+      {error && !health && !sysInfo && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       <TabBar tabs={["health","system","propagation"]} active={tab} setActive={setTab} color={C.teal} />
 
@@ -470,7 +485,7 @@ function KarmaPanel() {
   const [tab,       setTab]       = useState("health");
   const [verifying, setVerifying] = useState(false);
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
     const [h, lh] = await Promise.allSettled([
       apiGet(URL_KARMA, "/health"),
@@ -492,7 +507,20 @@ function KarmaPanel() {
     finally { setVerifying(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiGet(URL_KARMA, "/health"),
+      apiGet(URL_KARMA, "/karma/latest-hash"),
+    ]).then(([h, lh]) => {
+      if (!active) return;
+      if (h.status  === "fulfilled") setHealth(h.value);
+      if (lh.status === "fulfilled") setLatHash(lh.value);
+      if (h.status  === "rejected" && lh.status === "rejected") setError(h.reason?.message || "KARMA unreachable");
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const isOk = isHealthyStatus(health?.status);
 
@@ -501,7 +529,7 @@ function KarmaPanel() {
       <PanelHeader
         icon="⚖️" title="KARMA — Integrity Chain"
         subtitle={URL_KARMA} color={C.purple}
-        right={<RefBtn onClick={load} loading={loading} />}
+        right={<RefBtn onClick={handleRefresh} loading={loading} />}
       />
 
       <div style={{ display: "flex", gap: 7, marginBottom: 10 }}>
@@ -510,7 +538,7 @@ function KarmaPanel() {
       </div>
 
       {loading && <LoadRow text="Fetching KARMA health..." />}
-      {error && !health && !latHash && <ErrBox msg={error} onRetry={load} />}
+      {error && !health && !latHash && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       <TabBar tabs={["health","chain","verify"]} active={tab} setActive={setTab} color={C.purple} />
 
@@ -659,7 +687,7 @@ function TantraPanel() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
     const results = await Promise.allSettled([
       apiGet(URL_TANTRA, "/health"),
@@ -672,7 +700,21 @@ function TantraPanel() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiGet(URL_TANTRA, "/health"),
+      apiGet(URL_TANTRA, "/"),
+      apiGet(URL_TANTRA, "/status"),
+    ]).then(results => {
+      if (!active) return;
+      const first = results.find(r => r.status === "fulfilled");
+      if (first) setHealth(first.value);
+      else setError(results[0].reason?.message || "TANTRA unreachable");
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const isOk = health && isHealthyStatus(health.status || health.health || health.state);
 
@@ -681,11 +723,11 @@ function TantraPanel() {
       <PanelHeader
         icon="⚡" title="TANTRA — Gated Bridge"
         subtitle={URL_TANTRA} color={C.info}
-        right={<RefBtn onClick={load} loading={loading} />}
+        right={<RefBtn onClick={handleRefresh} loading={loading} />}
       />
 
       {loading && <LoadRow text="Connecting to TANTRA Gated Bridge..." />}
-      {error && <ErrBox msg={error} onRetry={load} />}
+      {error && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       {health && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -718,7 +760,7 @@ function BucketPanel() {
   const [loading,setLoading]= useState(true);
   const [error,  setError]  = useState(null);
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
     const [h, c] = await Promise.allSettled([
       apiGet(URL_BUCKET, "/health"),
@@ -730,7 +772,20 @@ function BucketPanel() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiGet(URL_BUCKET, "/health"),
+      apiGet(URL_BUCKET, "/bucket/chain-state"),
+    ]).then(([h, c]) => {
+      if (!active) return;
+      if (h.status === "fulfilled") setHealth(h.value);
+      if (c.status === "fulfilled") setChain(c.value);
+      if (h.status === "rejected" && c.status === "rejected") setError(h.reason?.message || "BUCKET unreachable");
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const isOk = health && isHealthyStatus(health.status);
   const artifactCount = chain?.artifact_count ?? health?.artifact_count ?? "—";
@@ -741,11 +796,11 @@ function BucketPanel() {
       <PanelHeader
         icon="🪣" title="BUCKET — Provenance Store"
         subtitle={URL_BUCKET} color={C.ok}
-        right={<RefBtn onClick={load} loading={loading} />}
+        right={<RefBtn onClick={handleRefresh} loading={loading} />}
       />
 
       {loading && <LoadRow text="Checking Bucket health..." />}
-      {error && !health && !chain && <ErrBox msg={error} onRetry={load} />}
+      {error && !health && !chain && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       {(health || chain) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -769,9 +824,8 @@ function SanskarPanel() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  const load = useCallback(async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true); setError(null);
-    // Sakshi confirmed /health endpoint
     const results = await Promise.allSettled([
       apiGet(URL_SANSKAR, "/health"),
       apiGet(URL_SANSKAR, "/"),
@@ -783,7 +837,21 @@ function SanskarPanel() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiGet(URL_SANSKAR, "/health"),
+      apiGet(URL_SANSKAR, "/"),
+      apiGet(URL_SANSKAR, "/status"),
+    ]).then(results => {
+      if (!active) return;
+      const first = results.find(r => r.status === "fulfilled");
+      if (first) setHealth(first.value);
+      else setError(results[0].reason?.message || "SANSKAR unreachable");
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const rawStatus = health?.status || health?.health || health?.state;
   const isOk = isHealthyStatus(rawStatus);
@@ -794,11 +862,11 @@ function SanskarPanel() {
       <PanelHeader
         icon="🕉️" title="SANSKAR — Constitutional Convergence"
         subtitle={URL_SANSKAR} color={C.orange}
-        right={<RefBtn onClick={load} loading={loading} />}
+        right={<RefBtn onClick={handleRefresh} loading={loading} />}
       />
 
       {loading && <LoadRow text="Connecting to SANSKAR..." />}
-      {error && <ErrBox msg={error} onRetry={load} />}
+      {error && <ErrBox msg={error} onRetry={handleRefresh} />}
 
       {health && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -903,7 +971,7 @@ function HarshaPanel() {
   const run = useCallback(async () => {
     if (!URL_HARSHA) return;
     setLoading(true); setError(null); setResult(null);
-    let body = {};
+    let body;
     try { body = JSON.parse(reqBody); } catch { body = { input: reqBody }; }
     try {
       const res = await apiPost(URL_HARSHA, activeTab.endpoint, body);

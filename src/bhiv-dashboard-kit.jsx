@@ -27,8 +27,8 @@ import {
   FileText, AlertTriangle, Users, Settings, Bell, ChevronDown,
   Sun, Moon, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
   CheckCircle2, XCircle, AlertCircle, Clock, Server, Database, Wifi,
-  Shield, CreditCard, Mail, Layers, GitBranch, Gauge, Zap, PlusCircle,
-  Download, ChevronRight, Rocket, RotateCcw,
+  Shield, CreditCard, Mail, Layers, GitBranch, Gauge, Zap,
+  ChevronRight, Rocket, RotateCcw,
   Pause, StopCircle, AlertOctagon, Terminal,
   History, CheckSquare, X, Loader2, ShieldAlert, LogIn, GitCommit,
   RefreshCw, Eye, Ban, Siren, ClipboardCheck, Inbox, Radio,
@@ -240,11 +240,14 @@ function useCommand(opts) {
   var label = opts.label, serviceCall = opts.serviceCall, canRollback = opts.canRollback || false, onAudit = opts.onAudit;
   var pair = useReducer(cmdReducer, { phase: CMD.IDLE, target: null, error: null, result: null, auditId: null });
   var state = pair[0], dispatch = pair[1];
-  var stateRef = useRef(state); stateRef.current = state;
+  var stateRef = useRef(state);
+  useEffect(function () {
+    stateRef.current = state;
+  }, [state]);
 
-  var confirm = useCallback(function (target) { dispatch({ type: "OPEN", target: target }); }, []);
-  var cancel = useCallback(function () { dispatch({ type: "RESET" }); }, []);
-  var reset = useCallback(function () { dispatch({ type: "RESET" }); }, []);
+  var confirm = useCallback(function (target) { dispatch({ type: "OPEN", target: target }); }, [dispatch]);
+  var cancel = useCallback(function () { dispatch({ type: "RESET" }); }, [dispatch]);
+  var reset = useCallback(function () { dispatch({ type: "RESET" }); }, [dispatch]);
   var execute = useCallback(function (payload) {
     dispatch({ type: "START" });
     var target = payload !== undefined ? payload : stateRef.current.target;
@@ -256,7 +259,7 @@ function useCommand(opts) {
       dispatch({ type: "FAILURE", error: err.message });
       if (onAudit) onAudit({ label: label, target: stateRef.current.target, status: "failure", error: err.message });
     });
-  }, [label, serviceCall, onAudit]);
+  }, [dispatch, label, serviceCall, onAudit]);
   var rollback = useCallback(function () {
     if (!canRollback || !stateRef.current.auditId) return;
     dispatch({ type: "ROLLBACK_START" });
@@ -264,7 +267,7 @@ function useCommand(opts) {
       dispatch({ type: "ROLLBACK_END" });
       if (onAudit) onAudit({ label: "ROLLBACK: " + label, target: stateRef.current.auditId, status: "rollback" });
     });
-  }, [canRollback, label, onAudit]);
+  }, [canRollback, dispatch, label, onAudit]);
 
   return { state: state, confirm: confirm, cancel: cancel, execute: execute, reset: reset, rollback: rollback, phase: state.phase };
 }
@@ -436,188 +439,21 @@ function StatPill({ label, val, color }) {
 
 // ─────────────────────────────────────────────────────────────
 // 8. WIDGET COMPONENTS
-// ─────────────────────────────────────────────────────────────
-
-function KpiCard({ k, t, loading }) {
-  var c = k.up ? DS.status.healthy : DS.status.critical;
-  if (loading) return <Card t={t} p={12} loading={true} />;
+// ──�function ThreatCard({ threat, t }) {
+  var sevColor = { critical: DS.status.critical, warning: DS.status.warning, info: DS.status.info }[threat.severity] || DS.status.neutral;
   return (
-    <Card t={t} p={12} style={{ animation: "fadeIn .3s ease" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 11, color: t.textSub, fontWeight: 500 }}>{k.label}</div>
-        <k.icon size={13} color={t.textMuted} />
+    <div style={{ padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + (threat.severity === "critical" ? DS.status.critical + "44" : t.border), background: threat.severity === "critical" ? DS.status.critical + "07" : t.bgElevated, animation: "fadeIn .2s ease" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <StatusDot s={threat.severity} pulse={threat.severity === "critical"} />
+        <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted, flex: 1 }}>{threat.id}</span>
+        <StatusBadge status={threat.status} />
+        <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: sevColor }}>{threat.time}</span>
       </div>
-      <div style={{ fontFamily: DS.font.mono, fontSize: 20, fontWeight: 700, margin: "4px 0 2px" }}>{k.value}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 6 }}>
-        {k.up ? <ArrowUpRight size={11} color={c} /> : <ArrowDownRight size={11} color={c} />}
-        <span style={{ fontSize: 10.5, color: c, fontFamily: DS.font.mono, fontWeight: 600 }}>{Math.abs(k.change)}%</span>
-        <span style={{ fontSize: 9.5, color: t.textMuted }}>vs last period</span>
-      </div>
-      <Sparkline data={k.spark} color={c} height={26} />
-    </Card>
-  );
-}
-
-function MetricCard({ t, label, value, icon, note, color, variant, loading }) {
-  var Icon = icon;
-  if (loading) return <Card t={t} p={12} loading={true} />;
-  return (
-    <Card t={t} p={12}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 11, color: t.textSub }}>{label}</div>
-        {Icon && <Icon size={13} color={color || t.textMuted} />}
-      </div>
-      <div style={{ fontFamily: DS.font.mono, fontSize: variant === "large" ? 24 : 19, fontWeight: 700, margin: "4px 0 2px", color: color || t.text }}>{value}</div>
-      {note && <div style={{ fontSize: 10.5, color: t.textMuted }}>{note}</div>}
-    </Card>
-  );
-}
-
-function AlertCard({ a, t, addAudit, addNotif }) {
-  var silenceCmd = useCommand({ label: "Silence " + a.id, serviceCall: function () { return MockService.silenceAlert(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " silenced", severity: "info" }); } });
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: DS.radius.md, border: "1px solid " + (a.severity === "critical" ? DS.status.critical + "44" : t.border), background: t.bgElevated, animation: "fadeIn .2s ease" }}>
-      <StatusDot s={a.severity} pulse={a.severity === "critical"} />
-      <span style={{ fontSize: 10, fontFamily: DS.font.mono, color: t.textMuted, width: 70, flexShrink: 0 }}>{a.id}</span>
-      <span style={{ fontSize: 12, flex: 1 }}>{a.title}</span>
-      <span style={{ fontSize: 10, background: t.surfaceHover, padding: "2px 6px", borderRadius: 99, color: t.textSub, flexShrink: 0 }}>{a.owner}</span>
-      <span style={{ fontSize: 10, fontFamily: DS.font.mono, color: t.textMuted, width: 60, textAlign: "right", flexShrink: 0 }}>{a.age}</span>
-      <CommandDialog cmd={silenceCmd} label={"Silence " + a.id} description={"Silence notifications for \"" + a.title + "\" for 30 minutes."} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Ban size={10} /></Btn>; }} />
+      <div style={{ fontSize: 12.5, fontWeight: 600 }}>{threat.title}</div>
+      <div style={{ fontSize: 10, color: t.textSub, marginTop: 3 }}>Source: {threat.source} ({threat.country})</div>
     </div>
   );
-}
-
-function IncidentCard({ inc, t, addAudit, addNotif }) {
-  var ackCmd = useCommand({ label: "Acknowledge " + inc.id, serviceCall: function () { return MockService.acknowledgeAlert(inc.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: inc.id + " acknowledged", severity: "info" }); } });
-  var escCmd = useCommand({ label: "Escalate " + inc.id, serviceCall: function () { return MockService.escalateIncident(inc.id); }, canRollback: true, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: inc.id + " escalated", severity: "warning" }); } });
-  return (
-    <div style={{ padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + (inc.severity === "critical" ? DS.status.critical + "44" : t.border), background: inc.severity === "critical" ? DS.status.critical + "07" : t.surface, animation: "fadeIn .2s ease" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
-        <StatusDot s={inc.severity} pulse={inc.severity === "critical"} />
-        <div style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted, flex: 1 }}>{inc.id} - {inc.owner} - {inc.age}</div>
-        <StatusBadge status={inc.status} />
-      </div>
-      <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 7 }}>{inc.title}</div>
-      <div style={{ display: "flex", gap: 5 }}>
-        <CommandDialog cmd={escCmd} label={"Escalate " + inc.id} description={"Escalate \"" + inc.title + "\" to leadership. All on-call engineers will be paged."} canRollback={true} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Siren size={11} /> Escalate</Btn>; }} />
-        {inc.status !== "resolved" && <CommandDialog cmd={ackCmd} label={"Acknowledge " + inc.id} description={"Acknowledge \"" + inc.title + "\". You are taking ownership."} trigger={function (p) { return <Btn variant="primary" t={t} small onClick={p.onClick}><Eye size={11} /> Acknowledge</Btn>; }} />}
-      </div>
-    </div>
-  );
-}
-
-function ApprovalCard({ a, t, addAudit, addNotif, onDismiss }) {
-  var approveCmd = useCommand({ label: "Approve " + a.id, serviceCall: function () { return MockService.approveRequest(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " approved", severity: "info" }); if (onDismiss) onDismiss(); } });
-  var rejectCmd = useCommand({ label: "Reject " + a.id, serviceCall: function () { return MockService.rejectRequest(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " rejected", severity: "warning" }); if (onDismiss) onDismiss(); } });
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + t.border, background: t.surface }}>
-      <PriorityIcon p={a.priority} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted }}>{a.id} - {a.type}</div>
-        <div style={{ fontSize: 12, fontWeight: 600 }}>{a.title}</div>
-        <div style={{ fontSize: 10.5, color: t.textSub }}>{a.requester} - {a.dept} - {a.age}</div>
-      </div>
-      <div style={{ display: "flex", gap: 5 }}>
-        <CommandDialog cmd={rejectCmd} label={"Reject: " + a.id} description={"Reject \"" + a.title + "\" from " + a.requester + "."} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Ban size={11} /> Reject</Btn>; }} />
-        <CommandDialog cmd={approveCmd} label={"Approve: " + a.id} description={"Approve \"" + a.title + "\" from " + a.requester + " (" + a.dept + "). Confirm policy compliance."} trigger={function (p) { return <Btn variant="success" t={t} small onClick={p.onClick}><CheckSquare size={11} /> Approve</Btn>; }} />
-      </div>
-    </div>
-  );
-}
-
-function HealthCard({ s, t, addAudit, addNotif }) {
-  var restartCmd = useCommand({ label: "Restart " + s.name, serviceCall: function () { return MockService.restartService(s.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: s.name + " restart " + (e.status === "success" ? "complete" : "failed"), severity: e.status === "success" ? "info" : "critical" }); } });
-  return (
-    <div style={{ padding: "10px 12px", borderRadius: DS.radius.md, border: "1px solid " + (s.status === "critical" ? DS.status.critical + "55" : t.border), background: t.surface }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-        <s.icon size={13} color={t.textSub} />
-        <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{s.name}</span>
-        <StatusDot s={s.status} pulse={s.status !== "healthy"} />
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: s.status !== "healthy" ? 8 : 0 }}>
-        <div style={{ fontSize: 10, fontFamily: DS.font.mono }}><span style={{ color: t.textMuted }}>LAT </span>{s.latency}</div>
-        <div style={{ fontSize: 10, fontFamily: DS.font.mono }}><span style={{ color: t.textMuted }}>UP </span>{s.uptime}</div>
-        <div style={{ fontSize: 10, fontFamily: DS.font.mono }}><span style={{ color: t.textMuted }}>RPM </span>{s.rpm.toLocaleString()}</div>
-      </div>
-      {s.status !== "healthy" && <CommandDialog cmd={restartCmd} label={"Restart: " + s.name} description={"Restart \"" + s.name + "\". Brief interruption expected."} trigger={function (p) { return <Btn variant="danger" t={t} small onClick={p.onClick} style={{ width: "100%", justifyContent: "center" }}><RefreshCw size={11} /> Restart service</Btn>; }} />}
-    </div>
-  );
-}
-
-function OpCard({ op, t, addAudit }) {
-  var pauseCmd = useCommand({ label: "Pause " + op.id, serviceCall: function () { return MockService.pauseOperation(op.id); }, canRollback: true, onAudit: addAudit });
-  var stopCmd = useCommand({ label: "Stop " + op.id, serviceCall: function () { return MockService.stopOperation(op.id); }, onAudit: addAudit });
-  return (
-    <div style={{ padding: "12px", borderRadius: DS.radius.md, border: "1px solid " + t.border, background: t.surface }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
-        <div style={{ width: 6, height: 6, borderRadius: 99, background: DS.status.healthy, animation: "blink 1.4s ease infinite", flexShrink: 0 }} />
-        <div style={{ fontSize: 9.5, fontFamily: DS.font.mono, color: t.textMuted }}>{op.id}</div>
-        <div style={{ fontSize: 9.5, color: t.textMuted, marginLeft: "auto", fontFamily: DS.font.mono }}>{op.elapsed}</div>
-      </div>
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{op.title}</div>
-      <MiniProgress val={op.progress} t={t} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-        <div style={{ fontSize: 10, color: t.textMuted }}>{op.startedBy}</div>
-        <div style={{ display: "flex", gap: 5 }}>
-          <CommandDialog cmd={pauseCmd} label={"Pause " + op.id} description={"Pause \"" + op.title + "\". Can be resumed from Operations."} trigger={function (p) { return <Btn variant="ghost" t={t} small onClick={p.onClick}><Pause size={10} /></Btn>; }} />
-          <CommandDialog cmd={stopCmd} label={"Stop " + op.id} description={"Stop \"" + op.title + "\" permanently. Progress will be lost."} trigger={function (p) { return <Btn variant="danger" t={t} small onClick={p.onClick}><StopCircle size={10} /></Btn>; }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TimelineCard({ t }) {
-  return (
-    <Card t={t} p={14}>
-      {MOCK.activityFeed.map(function (e, i) {
-        return (
-          <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < MOCK.activityFeed.length - 1 ? "1px solid " + t.border : "none" }}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, background: t.surfaceHover, border: "1px solid " + t.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <e.icon size={12} color={t.textSub} />
-            </div>
-            <div style={{ flex: 1, fontSize: 12 }}>{e.text}</div>
-            <div style={{ fontSize: 9.5, color: t.textMuted, fontFamily: DS.font.mono, whiteSpace: "nowrap" }}>{e.time}</div>
-          </div>
-        );
-      })}
-    </Card>
-  );
-}
-
-function SystemPulseWidget({ t }) {
-  var score = 73;
-  var s = score > 85 ? "healthy" : score > 65 ? "warning" : "critical";
-  var vals = [62, 66, 70, 64, 58, 61, 67, 72, 69, 73].map(function (v, i) { return { i: i, v: v }; });
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 10px", borderRadius: 99, background: t.surface, border: "1px solid " + t.border }}>
-      <StatusDot s={s} pulse />
-      <span style={{ fontSize: 9.5, color: t.textMuted, fontFamily: DS.font.mono }}>SYS PULSE</span>
-      <div style={{ width: 56, height: 16 }}>
-        <ResponsiveContainer width="100%" height={16}>
-          <AreaChart data={vals} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="syspulse" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={DS.status[s]} stopOpacity={0.35} />
-                <stop offset="100%" stopColor={DS.status[s]} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <Area type="monotone" dataKey="v" stroke={DS.status[s]} strokeWidth={1.5} fill="url(#syspulse)" dot={false} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-      <span style={{ fontSize: 10.5, fontFamily: DS.font.mono, fontWeight: 700, color: DS.status[s] }}>{score}</span>
-    </div>
-  );
-}
-
-function SituationBar({ t }) {
-  var items = [
-    { label: "Critical alerts", val: 2, color: DS.status.critical, icon: AlertOctagon },
-    { label: "Pending approvals", val: 4, color: DS.status.warning, icon: ClipboardCheck },
-    { label: "Running ops", val: 3, color: DS.accent.primary, icon: Activity },
-    { label: "Services degraded", val: 2, color: DS.status.critical, icon: Server },
-    { label: "System uptime", val: "99.94%", color: DS.status.healthy, icon: CheckCircle2 },
+},
     { label: "Deploy pipeline", val: "OK", color: DS.status.healthy, icon: GitBranch },
   ];
   return (
@@ -1248,6 +1084,26 @@ function Topbar({ activeDash }) {
 // 14. DASHBOARD PAGES
 // ─────────────────────────────────────────────────────────────
 
+function UiOnlyBanner({ title }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+      padding: "8px 14px", borderRadius: DS.radius.md,
+      border: "1px solid " + DS.status.warning + "44",
+      background: DS.status.warning + "0F",
+      color: DS.status.warning, fontSize: 11, fontWeight: 600,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <AlertCircle size={14} color={DS.status.warning} />
+        <span>UI-ONLY DEMONSTRATION — {title} is powered by local demonstration data and is not connected to live BHIV backend telemetry.</span>
+      </div>
+      <span style={{ fontSize: 9.5, fontFamily: DS.font.mono, background: DS.status.warning + "22", padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", whiteSpace: "nowrap" }}>
+        LOCAL DEMO
+      </span>
+    </div>
+  );
+}
+
 // EXECUTIVE DASHBOARD - CSS Grid, no scrolling primary content
 function ExecutiveDashboard() {
   var t = useTheme().t;
@@ -1257,7 +1113,8 @@ function ExecutiveDashboard() {
   var visible = MOCK.pendingApprovals.filter(function (a) { return dismissed.indexOf(a.id) < 0; });
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "auto auto 1fr auto", gap: 16, height: "calc(100vh - 54px)", overflowY: "auto", padding: "16px 20px 24px" }}>
+    <div style={{ display: "grid", gridTemplateRows: "auto auto auto 1fr auto", gap: 16, height: "calc(100vh - 54px)", overflowY: "auto", padding: "16px 20px 24px" }}>
+      <UiOnlyBanner title="Executive Core" />
       {/* Row 1: Situation bar */}
       <SituationBar t={t} />
 
@@ -1315,6 +1172,7 @@ function OperationsDashboard() {
   var nctx = useNotif(); var addNotif = nctx.addNotif;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 20px 24px", overflowY: "auto" }}>
+      <UiOnlyBanner title="Operations Command" />
       <SituationBar t={t} />
       <SectionHeader t={t} title="Service health - all monitored services" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
@@ -1347,9 +1205,9 @@ function OperationsDashboard() {
 // ENGINEERING DASHBOARD
 function EngineeringDashboard() {
   var t = useTheme().t;
-  var actx = useAudit(); var addAudit = actx.addAudit;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 20px 24px", overflowY: "auto" }}>
+      <UiOnlyBanner title="Engineering Core" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         <MetricCard t={t} label="Current Release" value="v4.1.9" icon={GitBranch} note="Deployed 12 min ago" />
         <MetricCard t={t} label="Code Coverage" value="84.2%" icon={CheckCircle2} note="+1.3% this week" color={DS.status.healthy} />
@@ -1402,10 +1260,9 @@ function EngineeringDashboard() {
 // SOC DASHBOARD
 function SOCDashboard() {
   var t = useTheme().t;
-  var actx = useAudit(); var addAudit = actx.addAudit;
-  var nctx = useNotif(); var addNotif = nctx.addNotif;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 20px 24px", overflowY: "auto" }}>
+      <UiOnlyBanner title="SOC Security Gateway" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         <MetricCard t={t} label="Active Threats" value="2" icon={ShieldAlert} note="2 critical, 2 warning" color={DS.status.critical} variant="large" />
         <MetricCard t={t} label="Events (24h)" value="14,820" icon={Activity} note="+3.2% vs yesterday" />
@@ -1433,6 +1290,7 @@ function FinanceDashboard() {
   var t = useTheme().t;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 20px 24px", overflowY: "auto" }}>
+      <UiOnlyBanner title="Finance Ledger" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         {MOCK.financeKpis.map(function (k) { return <KpiCard key={k.id} k={k} t={t} />; })}
       </div>
@@ -1468,6 +1326,7 @@ function AnalyticsDashboard() {
   var t = useTheme().t;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 20px 24px", overflowY: "auto" }}>
+      <UiOnlyBanner title="Analytics Node" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         <MetricCard t={t} label="Total Sessions (7d)" value="182,440" icon={BarChart2} note="+12.3% vs last week" />
         <MetricCard t={t} label="Avg Session Duration" value="6m 42s" icon={Clock} note="-0.4 min vs last week" />
@@ -1516,6 +1375,7 @@ function GovernmentDashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "16px 20px 24px", overflowY: "auto" }}>
+      <UiOnlyBanner title="Gov Command Center" />
       {/* Summary strip */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
         <MetricCard t={t} label="Active Events" value="2" icon={AlertTriangle} note="2 critical" color={DS.status.critical} />
@@ -1649,38 +1509,53 @@ function ShaktiMasterDashboard() {
   var nav = useNav();
 
   var [syncing, setSyncing] = useState(false);
+  // LOG NOTE: These initial entries are illustrative only — they are NOT real
+  // backend responses. A real SHAKTI federation log would come from Pratik's API.
   var [log, setLog] = useState([
-    { time: "14:09:12", msg: "SHAKTI-GATE: Handshake initiated with KARMA Registry... OK" },
-    { time: "14:09:10", msg: "SHAKTI-GATE: Sync state with Bucket: 100/100 artifacts verified... OK" },
-    { time: "14:09:08", msg: "SHAKTI-GATE: Verified signature of Gov Command Center: signature: 0x93fac..." },
-    { time: "14:09:05", msg: "SHAKTI-GATE: Verified signature of Operations Dashboard: signature: 0x24e0b..." },
-    { time: "14:09:01", msg: "SHAKTI-GATE: SHAKTI Master Gateway Online — listening on port 5174" }
+    { time: "--:--:--", msg: "[PENDING] SHAKTI API federation not yet available — awaiting Pratik's widget registration format" },
+    { time: "--:--:--", msg: "[UI] Runtime Services tab: PRANA, KARMA, RAJYA, BUCKET, SANSKAR connected to live APIs" },
+    { time: "--:--:--", msg: "[UI] Bucket tab: 100 real artifacts loaded from bhiv-bucket-i1l6.onrender.com" },
+    { time: "--:--:--", msg: "[BLOCKED] HARSHA (KSML/CET/SUM-SCRIPT): base URL not yet received from Harsha Pawar" },
+    { time: "--:--:--", msg: "[BLOCKED] InsightFlow: endpoints not received from Vijay Dhawan" }
   ]);
 
+  // NOTE: triggerSync is a UI-level navigation aid only.
+  // It does NOT call any backend API. There is no SHAKTI Master federation API
+  // endpoint available yet (pending Pratik's widget registration format).
+  // The log entries below are illustrative of what a real federation log would
+  // look like — they are NOT real backend responses.
   var triggerSync = useCallback(function () {
     setSyncing(true);
     setTimeout(function () {
       setSyncing(false);
       setLog(function (p) {
         return [
-          { time: new Date().toTimeString().split(' ')[0], msg: "SHAKTI-GATE: Federated synchronization complete. All 9 nodes verified." }
+          {
+            time: new Date().toTimeString().split(' ')[0],
+            msg: "[UI] Dashboard navigation sync complete — 9 local tabs registered. NOTE: No backend API call was made. SHAKTI API federation is pending Pratik's contract."
+          }
         ].concat(p);
       });
-      if (addAudit) addAudit({ label: "SHAKTI Federation Sync", target: "SHAKTI-GATE", status: "success" });
-      if (addNotif) addNotif({ text: "SHAKTI Federation Sync successful", severity: "info" });
+      if (addAudit) addAudit({ label: "SHAKTI UI Navigation Sync (no API)", target: "SHAKTI-GATE", status: "success" });
+      if (addNotif) addNotif({ text: "SHAKTI navigation sync — UI only (no backend API)", severity: "info" });
     }, 1500);
   }, [addAudit, addNotif]);
 
+  // NODE STATUS: These 9 nodes represent local dashboard tabs, not remote services.
+  // Status is always "healthy" because the UI rendered — NOT because a real health
+  // endpoint was called. Hash values are NOT real Bucket hashes.
+  // Latency values are NOT measured — they are placeholder values.
+  // Real federation requires Pratik's SHAKTI Master API contract.
   var nodes = [
-    { name: "Executive Core", type: "Dashboard", status: "healthy", delay: "12ms", hash: "4f2ce8a3", verdict: "Verified", targetId: "executive" },
-    { name: "Operations Command", type: "Dashboard", status: "healthy", delay: "24ms", hash: "8b9da21c", verdict: "Verified", targetId: "operations" },
-    { name: "Engineering Core", type: "Dashboard", status: "healthy", delay: "18ms", hash: "ce491fa5", verdict: "Verified", targetId: "engineering" },
-    { name: "SOC Security Gateway", type: "Dashboard", status: "healthy", delay: "8ms", hash: "93fac24e", verdict: "Verified", targetId: "soc" },
-    { name: "Finance Ledger", type: "Dashboard", status: "healthy", delay: "42ms", hash: "18e20ab7", verdict: "Verified", targetId: "finance" },
-    { name: "Analytics Node", type: "Dashboard", status: "healthy", delay: "56ms", hash: "02bc32c5", verdict: "Verified", targetId: "analytics" },
-    { name: "Gov Command Center", type: "Dashboard", status: "healthy", delay: "15ms", hash: "7c2a4d9e", verdict: "Verified", targetId: "government" },
-    { name: "Bucket Provenance Store", type: "Service Widget", status: "healthy", delay: "30ms", hash: "32243ab9", verdict: "Verified", targetId: "bucket" },
-    { name: "Runtime Services Widget", type: "Service Widget", status: "healthy", delay: "5ms", hash: "49191ce0", verdict: "Verified", targetId: "runtime" }
+    { name: "Executive Core", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "executive" },
+    { name: "Operations Command", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "operations" },
+    { name: "Engineering Core", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "engineering" },
+    { name: "SOC Security Gateway", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "soc" },
+    { name: "Finance Ledger", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "finance" },
+    { name: "Analytics Node", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "analytics" },
+    { name: "Gov Command Center", type: "Dashboard (local)", status: "ui-local", delay: "—", hash: "pending API", verdict: "UI only", targetId: "government" },
+    { name: "Bucket Provenance Store", type: "Live Service ✅", status: "live", delay: "real", hash: "from /chain-state", verdict: "Live", targetId: "bucket" },
+    { name: "Runtime Services", type: "Live Services ✅", status: "live", delay: "real", hash: "from KARMA", verdict: "Live", targetId: "runtime" }
   ];
 
   return (
@@ -1691,36 +1566,52 @@ function ShaktiMasterDashboard() {
         </div>
         <div>
           <h1 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: t.text }}>SHAKTI Master Dashboard</h1>
-          <p style={{ fontSize: 10.5, color: t.textMuted, margin: "2px 0 0" }}>Federated Observability Gateway — Deterministic Runtime Registry</p>
+          <p style={{ fontSize: 10.5, color: t.textMuted, margin: "2px 0 0" }}>UI Navigation Hub — Live Runtime: PRANA · KARMA · RAJYA · BUCKET · SANSKAR · TANTRA (partial) · SHAKTI API pending</p>
         </div>
-        <Btn variant="primary" t={t} style={{ marginLeft: "auto" }} onClick={triggerSync} disabled={syncing}>
-          {syncing ? <Loader2 size={12} className="spin" style={{ animation: "spin 1s linear infinite" }} /> : <RefreshCw size={12} />}
-          Synchronize Federation
+        <Btn variant="ghost" t={t} style={{ marginLeft: "auto" }} onClick={triggerSync} disabled={syncing}>
+          {syncing ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <RefreshCw size={12} />}
+          Refresh UI State
         </Btn>
       </div>
 
+      {/* FEDERATION STATUS NOTE: These cards show real counts where available.
+          Metrics marked "pending API" require Pratik's SHAKTI backend endpoint. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 14 }}>
         <Card t={t} p={10}>
-          <div style={{ fontSize: 10, color: t.textMuted }}>Federated Nodes</div>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.status.healthy, marginTop: 4 }}>9 / 9 Online</div>
+          <div style={{ fontSize: 10, color: t.textMuted }}>Registered Tabs</div>
+          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.status.healthy, marginTop: 4 }}>9 tabs</div>
+          <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>UI navigation — not API health</div>
         </Card>
         <Card t={t} p={10}>
-          <div style={{ fontSize: 10, color: t.textMuted }}>Total Events Verified</div>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.accent.primary, marginTop: 4 }}>25,482</div>
+          <div style={{ fontSize: 10, color: t.textMuted }}>Live Services Connected</div>
+          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.accent.primary, marginTop: 4 }}>5 / 7</div>
+          <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>PRANA, KARMA, RAJYA, BUCKET, SANSKAR</div>
         </Card>
         <Card t={t} p={10}>
-          <div style={{ fontSize: 10, color: t.textMuted }}>Security Index</div>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.status.info, marginTop: 4 }}>98.4%</div>
+          <div style={{ fontSize: 10, color: t.textMuted }}>Blocked Integrations</div>
+          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.status.critical, marginTop: 4 }}>2</div>
+          <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>HARSHA + InsightFlow</div>
         </Card>
         <Card t={t} p={10}>
-          <div style={{ fontSize: 10, color: t.textMuted }}>Sync Latency</div>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: DS.font.mono, color: DS.status.warning, marginTop: 4 }}>12ms (avg)</div>
+          <div style={{ fontSize: 10, color: t.textMuted }}>SHAKTI API Federation</div>
+          <div style={{ fontSize: 14, fontWeight: 700, fontFamily: DS.font.mono, color: DS.status.warning, marginTop: 4 }}>Pending</div>
+          <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>Awaiting Pratik's API contract</div>
         </Card>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14 }}>
         <Card t={t} p={12}>
-          <SectionHeader t={t} title="Federated Nodes Registry" sub="All dashboards publish status and integrity hash under deterministic contracts (Click row to browse)" />
+          <SectionHeader t={t} title="Federated Nodes Registry" sub="Click any row to navigate to that dashboard. Node status shows UI availability, not API health." />
+          <div style={{
+            background: DS.status.warning + "12",
+            border: "1px solid " + DS.status.warning + "55",
+            borderRadius: 6, padding: "7px 10px", marginTop: 8, marginBottom: 2,
+            fontSize: 10.5, color: DS.status.warning, lineHeight: 1.5,
+          }}>
+            ⚠ <strong>UI-level federation only.</strong> Node hashes and latency values shown below
+            are NOT real API responses. Real SHAKTI API federation is pending Pratik's widget
+            registration contract. Live data is available in the Runtime Services and Bucket tabs.
+          </div>
           <div style={{ overflowX: "auto", marginTop: 10 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
               <thead>
@@ -1737,14 +1628,23 @@ function ShaktiMasterDashboard() {
                   return (
                     <tr key={i} onClick={function () { if (nav && n.targetId) nav.setActiveDash(n.targetId); }} style={{ borderBottom: "1px solid " + t.border, cursor: "pointer" }} onMouseEnter={function (e) { e.currentTarget.style.background = t.surfaceHover; }} onMouseLeave={function (e) { e.currentTarget.style.background = "transparent"; }} title={"Browse " + n.name}>
                       <td style={{ padding: "8px", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: 99, background: DS.status.healthy }} />
+                        <span style={{ width: 6, height: 6, borderRadius: 99,
+                          background: n.status === "live" ? DS.status.healthy : DS.status.warning }} />
                         {n.name}
                       </td>
                       <td style={{ padding: "8px", color: t.textSub }}>{n.type}</td>
-                      <td style={{ padding: "8px", fontFamily: DS.font.mono, color: t.textSub }}>{n.delay}</td>
-                      <td style={{ padding: "8px", fontFamily: DS.font.mono, color: t.textMuted }}>{n.hash}</td>
+                      <td style={{ padding: "8px", fontFamily: DS.font.mono,
+                        color: n.delay === "—" ? t.textMuted : t.textSub }}>{n.delay}</td>
+                      <td style={{ padding: "8px", fontFamily: DS.font.mono,
+                        color: n.status === "live" ? DS.status.healthy : t.textMuted,
+                        fontSize: n.status === "live" ? 10 : 11 }}>{n.hash}</td>
                       <td style={{ padding: "8px" }}>
-                        <span style={{ fontSize: 9.5, fontWeight: 600, color: DS.status.healthy, background: DS.status.healthy + "14", padding: "1px 6px", borderRadius: 4 }}>
+                        <span style={{
+                          fontSize: 9.5, fontWeight: 600,
+                          color: n.status === "live" ? DS.status.healthy : DS.status.warning,
+                          background: (n.status === "live" ? DS.status.healthy : DS.status.warning) + "14",
+                          padding: "1px 6px", borderRadius: 4,
+                        }}>
                           {n.verdict}
                         </span>
                       </td>
@@ -1824,15 +1724,15 @@ export default function BHIVDashboardKit() {
     setAuditLog(function (prev) {
       return [{ id: "AUD-" + Date.now(), cmd: entry.label, target: String((entry.target && entry.target.id) || entry.target || "-"), status: entry.status, actor: "Raghav S.", time: "just now" }].concat(prev);
     });
-  }, []);
+  }, [setAuditLog]);
 
   var addNotif = useCallback(function (n) {
     setNotifs(function (p) { return [Object.assign({ id: Date.now(), read: false, time: "just now" }, n)].concat(p); });
-  }, []);
+  }, [setNotifs]);
 
   var markRead = useCallback(function (id) {
     setNotifs(function (p) { return p.map(function (n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); });
-  }, []);
+  }, [setNotifs]);
 
   return (
     <ThemeCtx.Provider value={{ theme: theme, t: t, setTheme: setTheme }}>
