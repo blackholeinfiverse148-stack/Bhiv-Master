@@ -18,15 +18,24 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import {
+  SERVICE_CONFIG,
+  HEALTH_STATES,
+  apiGet,
+  apiPost,
+  monitorAllServices,
+} from "./services/api";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { sanitizeDiagnostic } from "./services/telemetry";
 
 // ── Service base URLs ─────────────────────────────────────────────────────────
-const URL_PRANA   = "http://163.128.209.18:8103";
-const URL_KARMA   = "http://163.128.209.18:8102";
-const URL_RAJYA   = "https://text-risk-scoring-service.onrender.com";
-const URL_TANTRA  = "https://tantra-gated-bridge-infrastructure.onrender.com";
-const URL_BUCKET  = "https://bhiv-bucket-i1l6.onrender.com";
-const URL_SANSKAR = "https://full-tantra-constitutional-convergence.onrender.com";
-const URL_HARSHA  = "https://sl-validator-cet.onrender.com";
+const URL_PRANA   = SERVICE_CONFIG.PRANA;
+const URL_KARMA   = SERVICE_CONFIG.KARMA;
+const URL_RAJYA   = SERVICE_CONFIG.RAJYA;
+const URL_TANTRA  = SERVICE_CONFIG.TANTRA;
+const URL_BUCKET  = SERVICE_CONFIG.BUCKET;
+const URL_SANSKAR = SERVICE_CONFIG.SANSKAR;
+const URL_HARSHA  = SERVICE_CONFIG.HARSHA;
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -49,79 +58,6 @@ const C = {
 };
 const MONO = "'JetBrains Mono','IBM Plex Mono',monospace";
 const BODY = "'Inter',system-ui,sans-serif";
-
-// ── Fetch helpers ─────────────────────────────────────────────────────────────
-async function apiFetch(baseUrl, path, options) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(baseUrl + path, {
-      signal: controller.signal,
-      ...options,
-    });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-    return await res.json();
-  } catch (e) {
-    clearTimeout(timer);
-    if (e.name === "AbortError") throw new Error("Timed out after 8s", { cause: e });
-    throw e;
-  }
-}
-
-function apiGet(baseUrl, path) {
-  return apiFetch(baseUrl, path);
-}
-
-function apiPost(baseUrl, path, body) {
-  return apiFetch(baseUrl, path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
-// ── Deterministic Health States ────────────────────────────────────────────────
-const HEALTH_STATES = {
-  CHECKING: "CHECKING",
-  HEALTHY: "HEALTHY",
-  DEGRADED: "DEGRADED",
-  OFFLINE: "OFFLINE",
-  TIMEOUT: "TIMEOUT",
-  AUTH_FAILED: "AUTH_FAILED",
-  EMPTY_RESPONSE: "EMPTY_RESPONSE",
-  INVALID_RESPONSE: "INVALID_RESPONSE",
-  UNKNOWN: "UNKNOWN",
-};
-
-async function checkServiceHealth(baseUrl, path = "/health") {
-  if (!baseUrl) return HEALTH_STATES.UNKNOWN;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(baseUrl + path, { signal: controller.signal });
-    clearTimeout(timer);
-    if (res.status === 401 || res.status === 403) return HEALTH_STATES.AUTH_FAILED;
-    if (res.status >= 500) return HEALTH_STATES.DEGRADED;
-    if (!res.ok) return HEALTH_STATES.UNKNOWN;
-    const text = await res.text();
-    if (!text || !text.trim()) return HEALTH_STATES.EMPTY_RESPONSE;
-    let data;
-    try { data = JSON.parse(text); } catch { return HEALTH_STATES.INVALID_RESPONSE; }
-    if (data && typeof data === "object") {
-      const statusVal = String(data.status || data.state || "").toLowerCase();
-      if (["healthy", "ok", "running", "up", "active", "online", "operational"].includes(statusVal)) {
-        return HEALTH_STATES.HEALTHY;
-      }
-      if (data.service || data.name || data.version) return HEALTH_STATES.HEALTHY;
-    }
-    return HEALTH_STATES.UNKNOWN;
-  } catch (err) {
-    clearTimeout(timer);
-    if (err.name === "AbortError") return HEALTH_STATES.TIMEOUT;
-    return HEALTH_STATES.OFFLINE;
-  }
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtTime(val) {
@@ -202,7 +138,7 @@ function ErrBox({ msg, onRetry }) {
       display: "flex", alignItems: "center", gap: 8,
       fontSize: 11, color: C.crit,
     }}>
-      <span style={{ flex: 1 }}>⚠ {msg}</span>
+      <span style={{ flex: 1 }}>⚠ {sanitizeDiagnostic(msg)}</span>
       {onRetry && (
         <button onClick={onRetry} style={{
           fontSize: 10, padding: "2px 8px", borderRadius: 5,
@@ -279,7 +215,7 @@ function RawJSON({ data, label }) {
             whiteSpace: "pre-wrap", wordBreak: "break-all",
             maxHeight: 280, overflowY: "auto", margin: 0,
           }}>
-            {JSON.stringify(data, null, 2)}
+            {sanitizeDiagnostic(JSON.stringify(data, null, 2))}
           </pre>
         </div>
       )}
@@ -361,21 +297,26 @@ function OverviewStrip({ services }) {
       background: C.elevated,
       marginBottom: 16,
     }}>
-      {services.map(({ name, state, color }) => {
+      {services.map(({ name, state, color, latencyMs, errorMessage, httpStatus }) => {
         const isChecking = state === HEALTH_STATES.CHECKING;
         const isHealthy = state === HEALTH_STATES.HEALTHY;
-        const stateColor = isHealthy ? C.ok : (isChecking ? C.textMuted : C.crit);
+        const isDegraded = state === HEALTH_STATES.DEGRADED;
+        const stateColor = isHealthy ? C.ok : isDegraded ? C.warn : (isChecking ? C.textMuted : C.crit);
         return (
-          <div key={name} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div key={name} title={errorMessage || (isHealthy ? `Healthy (${latencyMs}ms)` : state)} style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
             {isChecking
               ? <Spin size={8} />
               : <Dot ok={isHealthy} pulse={isHealthy} />
             }
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color, lineHeight: 1 }}>{name}</div>
               <div style={{ fontSize: 9, color: stateColor, marginTop: 1, fontFamily: MONO, fontWeight: 600 }}>
                 {state || HEALTH_STATES.CHECKING}
+                {latencyMs !== undefined && latencyMs > 0 ? ` (${latencyMs}ms)` : ""}
               </div>
+              {httpStatus && (
+                <div style={{ fontSize: 8.5, color: C.textMuted, fontFamily: MONO }}>HTTP {httpStatus}</div>
+              )}
             </div>
           </div>
         );
@@ -1214,36 +1155,42 @@ function ReplayPanel() {
 
 // ── Root export ───────────────────────────────────────────────────────────────
 export default function RuntimeServicesWidget() {
-  const [status, setStatus] = useState({
-    prana:   HEALTH_STATES.CHECKING,
-    karma:   HEALTH_STATES.CHECKING,
-    rajya:   HEALTH_STATES.CHECKING,
-    tantra:  HEALTH_STATES.CHECKING,
-    bucket:  HEALTH_STATES.CHECKING,
-    sanskar: HEALTH_STATES.CHECKING,
-    harsha:  URL_HARSHA ? HEALTH_STATES.CHECKING : HEALTH_STATES.UNKNOWN,
-  });
+  const [monitorData, setMonitorData] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkServiceHealth(URL_PRANA,   "/health").then(st => setStatus(p => ({ ...p, prana:   st })));
-    checkServiceHealth(URL_KARMA,   "/health").then(st => setStatus(p => ({ ...p, karma:   st })));
-    checkServiceHealth(URL_RAJYA,   "/health").then(st => setStatus(p => ({ ...p, rajya:   st })));
-    checkServiceHealth(URL_TANTRA,  "/health").then(st => setStatus(p => ({ ...p, tantra:  st })));
-    checkServiceHealth(URL_BUCKET,  "/health").then(st => setStatus(p => ({ ...p, bucket:  st })));
-    checkServiceHealth(URL_SANSKAR, "/health").then(st => setStatus(p => ({ ...p, sanskar: st })));
-    if (URL_HARSHA) {
-      checkServiceHealth(URL_HARSHA, "/health").then(st => setStatus(p => ({ ...p, harsha: st })));
+  const refreshMonitoring = useCallback(async () => {
+    setLoading(true);
+    try {
+      const results = await monitorAllServices();
+      setMonitorData(results);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      if (active) refreshMonitoring();
+    }, 0);
+    const interval = setInterval(() => {
+      if (active) refreshMonitoring();
+    }, 30000);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [refreshMonitoring]);
+
   const overviewServices = [
-    { name: "PRANA",   state: status.prana,   color: C.teal   },
-    { name: "KARMA",   state: status.karma,   color: C.purple },
-    { name: "RAJYA",   state: status.rajya,   color: C.warn   },
-    { name: "TANTRA",  state: status.tantra,  color: C.info   },
-    { name: "BUCKET",  state: status.bucket,  color: C.ok     },
-    { name: "SANSKAR", state: status.sanskar, color: C.orange },
-    { name: "HARSHA",  state: status.harsha,  color: C.teal   },
+    { name: "PRANA",   state: monitorData.prana?.status   || HEALTH_STATES.CHECKING, color: C.teal,   latencyMs: monitorData.prana?.latencyMs,   errorMessage: monitorData.prana?.errorMessage,   httpStatus: monitorData.prana?.httpStatus },
+    { name: "KARMA",   state: monitorData.karma?.status   || HEALTH_STATES.CHECKING, color: C.purple, latencyMs: monitorData.karma?.latencyMs,   errorMessage: monitorData.karma?.errorMessage,   httpStatus: monitorData.karma?.httpStatus },
+    { name: "RAJYA",   state: monitorData.rajya?.status   || HEALTH_STATES.CHECKING, color: C.warn,   latencyMs: monitorData.rajya?.latencyMs,   errorMessage: monitorData.rajya?.errorMessage,   httpStatus: monitorData.rajya?.httpStatus },
+    { name: "TANTRA",  state: monitorData.tantra?.status  || HEALTH_STATES.CHECKING, color: C.info,   latencyMs: monitorData.tantra?.latencyMs,  errorMessage: monitorData.tantra?.errorMessage,  httpStatus: monitorData.tantra?.httpStatus },
+    { name: "BUCKET",  state: monitorData.bucket?.status  || HEALTH_STATES.CHECKING, color: C.ok,     latencyMs: monitorData.bucket?.latencyMs,  errorMessage: monitorData.bucket?.errorMessage,  httpStatus: monitorData.bucket?.httpStatus },
+    { name: "SANSKAR", state: monitorData.sanskar?.status || HEALTH_STATES.CHECKING, color: C.orange, latencyMs: monitorData.sanskar?.latencyMs, errorMessage: monitorData.sanskar?.errorMessage, httpStatus: monitorData.sanskar?.httpStatus },
+    { name: "HARSHA",  state: monitorData.harsha?.status  || HEALTH_STATES.CHECKING, color: C.teal,   latencyMs: monitorData.harsha?.latencyMs,  errorMessage: monitorData.harsha?.errorMessage,  httpStatus: monitorData.harsha?.httpStatus },
   ];
 
   return (
@@ -1271,8 +1218,24 @@ export default function RuntimeServicesWidget() {
             Runtime Telemetry — PRANA · KARMA · RAJYA · TANTRA · BUCKET · SANSKAR · HARSHA
           </div>
         </div>
-        <div style={{ marginLeft: "auto", fontSize: 10, color: C.textMuted, fontFamily: MONO }}>
-          {new Date().toLocaleTimeString("en-IN")} IST
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: C.textMuted, fontFamily: MONO }}>
+          <span>{new Date().toLocaleTimeString("en-IN")} IST</span>
+          <button
+            onClick={refreshMonitoring}
+            disabled={loading}
+            style={{
+              padding: "4px 9px",
+              borderRadius: 5,
+              border: "1px solid " + C.border,
+              background: C.elevated,
+              color: C.text,
+              fontSize: 9.5,
+              fontFamily: MONO,
+              cursor: loading ? "wait" : "pointer",
+            }}
+          >
+            {loading ? "Probing..." : "Refresh Probes"}
+          </button>
         </div>
       </div>
 
@@ -1281,26 +1244,42 @@ export default function RuntimeServicesWidget() {
 
       {/* Row 1: PRANA + KARMA */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <PranaPanel />
-        <KarmaPanel />
+        <ErrorBoundary name="PRANA Service Panel" compact>
+          <PranaPanel />
+        </ErrorBoundary>
+        <ErrorBoundary name="KARMA Service Panel" compact>
+          <KarmaPanel />
+        </ErrorBoundary>
       </div>
 
       {/* Row 2: RAJYA + TANTRA */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
-        <RajyaPanel />
-        <TantraPanel />
+        <ErrorBoundary name="RAJYA Service Panel" compact>
+          <RajyaPanel />
+        </ErrorBoundary>
+        <ErrorBoundary name="TANTRA Service Panel" compact>
+          <TantraPanel />
+        </ErrorBoundary>
       </div>
 
       {/* Row 3: BUCKET + SANSKAR */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
-        <BucketPanel />
-        <SanskarPanel />
+        <ErrorBoundary name="BUCKET Service Panel" compact>
+          <BucketPanel />
+        </ErrorBoundary>
+        <ErrorBoundary name="SANSKAR Service Panel" compact>
+          <SanskarPanel />
+        </ErrorBoundary>
       </div>
 
       {/* Row 4: HARSHA + REPLAY */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
-        <HarshaPanel />
-        <ReplayPanel />
+        <ErrorBoundary name="HARSHA Service Panel" compact>
+          <HarshaPanel />
+        </ErrorBoundary>
+        <ErrorBoundary name="PRANA Replay Panel" compact>
+          <ReplayPanel />
+        </ErrorBoundary>
       </div>
 
       {/* Footer */}

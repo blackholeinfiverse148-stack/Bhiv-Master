@@ -12,8 +12,10 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { SERVICE_CONFIG, apiGet } from "./services/api";
+import { sanitizeDiagnostic } from "./services/telemetry";
 
-const BASE_URL = "https://bhiv-bucket-i1l6.onrender.com";
+const BASE_URL = SERVICE_CONFIG.BUCKET;
 
 // Design tokens - matches BHIV ECC system
 const C = {
@@ -55,10 +57,8 @@ function formatTs(val) {
 }
 
 // ── API Fetcher ───────────────────────────────────────────────────────────────
-async function apiFetch(path) {
-  const res = await fetch(`${BASE_URL}${path}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-  return res.json();
+function apiFetch(path) {
+  return apiGet(BASE_URL, path);
 }
 
 // ── Primitives ────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ function ErrBox({ msg, onRetry }) {
       border: `1px solid ${C.crit}44`, background: C.crit + "08",
       display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: C.crit,
     }}>
-      <span style={{ flex: 1 }}>⚠ {msg}</span>
+      <span style={{ flex: 1 }}>⚠ {sanitizeDiagnostic(msg)}</span>
       {onRetry && (
         <button onClick={onRetry} style={{
           fontSize: 11, padding: "3px 10px", borderRadius: 6,
@@ -183,7 +183,7 @@ function RawJson({ data }) {
             whiteSpace: "pre-wrap", wordBreak: "break-all",
             maxHeight: 320, overflowY: "auto", margin: 0, paddingTop: 4,
           }}>
-            {JSON.stringify(data, null, 2)}
+            {sanitizeDiagnostic(JSON.stringify(data, null, 2))}
           </pre>
         </div>
       )}

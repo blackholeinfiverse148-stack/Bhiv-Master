@@ -18,6 +18,11 @@
 import { useState, useEffect, useCallback, useReducer, useRef, createContext, useContext } from "react";
 import BucketWidget from "./bucket-integration";
 import RuntimeServicesWidget from "./runtime-services-widget";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ConstitutionalObservabilityDashboard from "./components/ConstitutionalObservability";
+import TraceabilityInspector from "./components/TraceabilityInspector";
+import { checkAllRuntimeServices, HEALTH_STATES } from "./services/api";
+import { CMD, cmdReducer } from "./services/command";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -205,8 +210,10 @@ var MockService = {
 
 // ─────────────────────────────────────────────────────────────
 // 5. CONTEXTS (Zustand-equivalent using React Context)
-// ─────────────────────────────────────────────────────────────
 var ThemeCtx = createContext(null);
+export function ThemeProvider({ value, children }) {
+  return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;
+}
 var AuditCtx = createContext(null);
 var PanelCtx = createContext(null);
 var NotifCtx = createContext(null);
@@ -219,22 +226,8 @@ function useNotif() { return useContext(NotifCtx); }
 function useNav() { return useContext(NavCtx); }
 
 // ─────────────────────────────────────────────────────────────
-// 6. COMMAND ENGINE
+// 6. COMMAND ENGINE (State machine defined in ./services/command)
 // ─────────────────────────────────────────────────────────────
-var CMD = { IDLE: "idle", CONFIRM: "confirm", EXECUTING: "executing", SUCCESS: "success", FAILURE: "failure", ROLLING_BACK: "rolling_back", ROLLED_BACK: "rolled_back" };
-
-function cmdReducer(state, action) {
-  switch (action.type) {
-    case "OPEN": return Object.assign({}, state, { phase: CMD.CONFIRM, target: action.target });
-    case "START": return Object.assign({}, state, { phase: CMD.EXECUTING, error: null });
-    case "SUCCESS": return Object.assign({}, state, { phase: CMD.SUCCESS, result: action.result, auditId: action.auditId });
-    case "FAILURE": return Object.assign({}, state, { phase: CMD.FAILURE, error: action.error });
-    case "ROLLBACK_START": return Object.assign({}, state, { phase: CMD.ROLLING_BACK });
-    case "ROLLBACK_END": return Object.assign({}, state, { phase: CMD.ROLLED_BACK });
-    case "RESET": return { phase: CMD.IDLE, target: null, error: null, result: null, auditId: null };
-    default: return state;
-  }
-}
 
 function useCommand(opts) {
   var label = opts.label, serviceCall = opts.serviceCall, canRollback = opts.canRollback || false, onAudit = opts.onAudit;
@@ -531,7 +524,7 @@ function IncidentCard({ inc, t, addAudit, addNotif }) {
   );
 }
 
-function ApprovalCard({ a, t, addAudit, addNotif, onDismiss }) {
+export function ApprovalCard({ a, t, addAudit, addNotif, onDismiss }) {
   var approveCmd = useCommand({ label: "Approve " + a.id, serviceCall: function () { return MockService.approveRequest(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " approved", severity: "info" }); if (onDismiss) onDismiss(); } });
   var rejectCmd = useCommand({ label: "Reject " + a.id, serviceCall: function () { return MockService.rejectRequest(a.id); }, onAudit: function (e) { if (addAudit) addAudit(e); if (addNotif) addNotif({ text: a.id + " rejected", severity: "warning" }); if (onDismiss) onDismiss(); } });
   return (
@@ -611,11 +604,28 @@ function TimelineCard({ t }) {
 }
 
 function SystemPulseWidget({ t }) {
-  var score = 73;
-  var s = score > 85 ? "healthy" : score > 65 ? "warning" : "critical";
-  var vals = [62, 66, 70, 64, 58, 61, 67, 72, 69, 73].map(function (v, i) { return { i: i, v: v }; });
+  var [liveState, setLiveState] = useState({ healthyCount: 4, total: 7, status: "healthy" });
+
+  useEffect(function () {
+    var active = true;
+    function poll() {
+      checkAllRuntimeServices().then(function (results) {
+        if (!active) return;
+        var healthy = Object.values(results).filter(function (st) { return st === HEALTH_STATES.HEALTHY; }).length;
+        var st = healthy >= 4 ? "healthy" : healthy >= 2 ? "warning" : "critical";
+        setLiveState({ healthyCount: healthy, total: 7, status: st });
+      }).catch(function () {});
+    }
+    poll();
+    var interval = setInterval(poll, 30000);
+    return function () { active = false; clearInterval(interval); };
+  }, []);
+
+  var s = liveState.status;
+  var score = Math.round((liveState.healthyCount / liveState.total) * 100);
+  var vals = [50, 55, 60, 65, 70, 75, 80, 85, score].map(function (v, i) { return { i: i, v: v }; });
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 10px", borderRadius: 99, background: t.surface, border: "1px solid " + t.border }}>
+    <div title={"Live Runtime Health: " + liveState.healthyCount + "/" + liveState.total + " Sovereign Runtimes Operational"} style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 10px", borderRadius: 99, background: t.surface, border: "1px solid " + t.border }}>
       <StatusDot s={s} pulse />
       <span style={{ fontSize: 9.5, color: t.textMuted, fontFamily: DS.font.mono }}>SYS PULSE</span>
       <div style={{ width: 56, height: 16 }}>
@@ -631,7 +641,9 @@ function SystemPulseWidget({ t }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <span style={{ fontSize: 10.5, fontFamily: DS.font.mono, fontWeight: 700, color: DS.status[s] }}>{score}</span>
+      <span style={{ fontSize: 10.5, fontFamily: DS.font.mono, fontWeight: 700, color: DS.status[s] }}>
+        {liveState.healthyCount}/{liveState.total}
+      </span>
     </div>
   );
 }
@@ -1006,6 +1018,8 @@ var DASHBOARDS = [
   { id: "government", label: "Gov Command Center", icon: ClipboardCheck, color: DS.chart[2] },
   { id: "bucket", label: "Bucket Store", icon: Database, color: "#22C55E" },
   { id: "runtime", label: "Runtime Runtimes", icon: Activity, color: "#22C55E" },
+  { id: "constitutional", label: "Constitutional Obs", icon: Shield, color: "#8B5CF6" },
+  { id: "traceability", label: "Trace Correlation", icon: GitCommit, color: "#14B8A6" },
 ];
 
 var DASHBOARDS_GROUPED = [
@@ -1040,7 +1054,9 @@ var DASHBOARDS_GROUPED = [
     key: "system",
     items: [
       { id: "bucket", label: "Bucket Store", icon: Database, color: "#22C55E" },
-      { id: "runtime", label: "Runtime Runtimes", icon: Activity, color: "#22C55E" }
+      { id: "runtime", label: "Runtime Runtimes", icon: Activity, color: "#22C55E" },
+      { id: "constitutional", label: "Constitutional Obs", icon: Shield, color: "#8B5CF6" },
+      { id: "traceability", label: "Trace Correlation", icon: GitCommit, color: "#14B8A6" }
     ]
   }
 ];
@@ -1925,34 +1941,46 @@ export default function BHIVDashboardKit() {
   }, [setNotifs]);
 
   return (
-    <ThemeCtx.Provider value={{ theme: theme, t: t, setTheme: setTheme }}>
-      <AuditCtx.Provider value={{ auditLog: auditLog, addAudit: addAudit }}>
-        <PanelCtx.Provider value={{ panelOpen: panelOpen, setPanelOpen: setPanelOpen }}>
-          <NotifCtx.Provider value={{ notifs: notifs, addNotif: addNotif, markRead: markRead }}>
-            <NavCtx.Provider value={{ activeDash: activeDash, setActiveDash: setActiveDash }}>
-              <div style={{ fontFamily: DS.font.body, background: t.bg, color: t.text, minHeight: "100vh", display: "flex", transition: "background .22s,color .22s" }}>
-                <Sidebar activeDash={activeDash} setActiveDash={setActiveDash} />
-                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-                  <Topbar activeDash={activeDash} />
-                  <div style={{ flex: 1, overflowY: "auto" }}>
-                    {activeDash === "shakti" && <ShaktiMasterDashboard />}
-                    {activeDash === "executive" && <ExecutiveDashboard />}
-                    {activeDash === "operations" && <OperationsDashboard />}
-                    {activeDash === "engineering" && <EngineeringDashboard />}
-                    {activeDash === "soc" && <SOCDashboard />}
-                    {activeDash === "finance" && <FinanceDashboard />}
-                    {activeDash === "analytics" && <AnalyticsDashboard />}
-                    {activeDash === "government" && <GovernmentDashboard />}
-                    {activeDash === "bucket" && <BucketWidget />}
-                    {activeDash === "runtime" && <RuntimeServicesWidget />}
+    <ErrorBoundary name="BHIV Master Root Application">
+      <ThemeCtx.Provider value={{ theme: theme, t: t, setTheme: setTheme }}>
+        <AuditCtx.Provider value={{ auditLog: auditLog, addAudit: addAudit }}>
+          <PanelCtx.Provider value={{ panelOpen: panelOpen, setPanelOpen: setPanelOpen }}>
+            <NotifCtx.Provider value={{ notifs: notifs, addNotif: addNotif, markRead: markRead }}>
+              <NavCtx.Provider value={{ activeDash: activeDash, setActiveDash: setActiveDash }}>
+                <div style={{ fontFamily: DS.font.body, background: t.bg, color: t.text, minHeight: "100vh", display: "flex", transition: "background .22s,color .22s" }}>
+                  <ErrorBoundary name="Navigation Sidebar" onAudit={addAudit} onNotif={addNotif}>
+                    <Sidebar activeDash={activeDash} setActiveDash={setActiveDash} />
+                  </ErrorBoundary>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    <ErrorBoundary name="Header Topbar" onAudit={addAudit} onNotif={addNotif}>
+                      <Topbar activeDash={activeDash} />
+                    </ErrorBoundary>
+                    <div style={{ flex: 1, overflowY: "auto" }}>
+                      {activeDash === "shakti" && <ErrorBoundary name="SHAKTI Master" onAudit={addAudit} onNotif={addNotif}><ShaktiMasterDashboard /></ErrorBoundary>}
+                      {activeDash === "executive" && <ErrorBoundary name="Executive Core" onAudit={addAudit} onNotif={addNotif}><ExecutiveDashboard /></ErrorBoundary>}
+                      {activeDash === "operations" && <ErrorBoundary name="Operations Command" onAudit={addAudit} onNotif={addNotif}><OperationsDashboard /></ErrorBoundary>}
+                      {activeDash === "engineering" && <ErrorBoundary name="Engineering Core" onAudit={addAudit} onNotif={addNotif}><EngineeringDashboard /></ErrorBoundary>}
+                      {activeDash === "soc" && <ErrorBoundary name="SOC Security Gateway" onAudit={addAudit} onNotif={addNotif}><SOCDashboard /></ErrorBoundary>}
+                      {activeDash === "finance" && <ErrorBoundary name="Finance Ledger" onAudit={addAudit} onNotif={addNotif}><FinanceDashboard /></ErrorBoundary>}
+                      {activeDash === "analytics" && <ErrorBoundary name="Analytics Node" onAudit={addAudit} onNotif={addNotif}><AnalyticsDashboard /></ErrorBoundary>}
+                      {activeDash === "government" && <ErrorBoundary name="Gov Command Center" onAudit={addAudit} onNotif={addNotif}><GovernmentDashboard /></ErrorBoundary>}
+                      {activeDash === "bucket" && <ErrorBoundary name="Bucket Store" onAudit={addAudit} onNotif={addNotif}><BucketWidget /></ErrorBoundary>}
+                      {activeDash === "runtime" && <ErrorBoundary name="Runtime Services" onAudit={addAudit} onNotif={addNotif}><RuntimeServicesWidget /></ErrorBoundary>}
+                      {activeDash === "constitutional" && <ErrorBoundary name="Constitutional Observability" onAudit={addAudit} onNotif={addNotif}><ConstitutionalObservabilityDashboard /></ErrorBoundary>}
+                      {activeDash === "traceability" && <ErrorBoundary name="Traceability Inspector" onAudit={addAudit} onNotif={addNotif}><TraceabilityInspector /></ErrorBoundary>}
+                    </div>
                   </div>
+                  {panelOpen && (
+                    <ErrorBoundary name="Command Terminal Panel" onAudit={addAudit} onNotif={addNotif}>
+                      <CommandPanel />
+                    </ErrorBoundary>
+                  )}
                 </div>
-                {panelOpen && <CommandPanel />}
-              </div>
-            </NavCtx.Provider>
-          </NotifCtx.Provider>
-        </PanelCtx.Provider>
-      </AuditCtx.Provider>
-    </ThemeCtx.Provider>
+              </NavCtx.Provider>
+            </NotifCtx.Provider>
+          </PanelCtx.Provider>
+        </AuditCtx.Provider>
+      </ThemeCtx.Provider>
+    </ErrorBoundary>
   );
 }
