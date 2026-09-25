@@ -1,0 +1,720 @@
+{
+  "generatedAt": "2026-09-25T07:30:02.688Z",
+  "rajyaDiscrepancyAudit": {
+    "finding": "Discrepancy Analysis: POST /validate vs POST /api/v1/rajya/validate",
+    "evidenceSources": [
+      {
+        "file": "docs/API_Mapping.md",
+        "line": 11,
+        "entry": "RAJYA Base: https://text-risk-scoring-service.onrender.com | Endpoint: /api/v1/rajya/validate (POST)",
+        "authoritative": true
+      },
+      {
+        "file": "docs/INTEGRATION.md",
+        "line": 15,
+        "entry": "RAJYA | https://text-risk-scoring-service.onrender.com | POST /api/v1/rajya/validate",
+        "authoritative": true
+      },
+      {
+        "file": "docs/Review_Packet.md",
+        "line": 106,
+        "entry": "System path: POST https://text-risk-scoring-service.onrender.com/api/v1/rajya/validate",
+        "authoritative": true
+      },
+      {
+        "file": "src/runtime-services-widget.jsx",
+        "line": 603,
+        "entry": "await apiPost(URL_RAJYA, '/api/v1/rajya/validate', body)",
+        "authoritative": true
+      },
+      {
+        "file": "src/components/ConstitutionalObservability.jsx",
+        "line": 206,
+        "entry": "await apiPost(SERVICE_CONFIG.RAJYA, '/api/v1/rajya/validate', payload)",
+        "authoritative": true
+      },
+      {
+        "file": "src/services/traceability.js",
+        "line": 230,
+        "entry": "endpoint: `${SERVICE_CONFIG.RAJYA}/api/v1/rajya/validate`",
+        "authoritative": true
+      },
+      {
+        "file": "docs/API_Mapping.md",
+        "line": 15,
+        "entry": "HARSHA Base: https://sl-validator-cet.onrender.com | Endpoints: /validate, /compile_execution, /cet/compile, /forward_to_sarathi, /enforce_execution, /validate_execution, /execute",
+        "authoritative": true
+      }
+    ],
+    "resolution": {
+      "status": "RESOLVED & AUTHORITATIVE",
+      "authoritativeRajyaEndpoint": "POST /api/v1/rajya/validate",
+      "harshaValidateEndpoint": "POST /validate",
+      "rootCause": "The endpoint 'POST /validate' is the canonical DecisionRequest validation endpoint for the HARSHA CET validator service (https://sl-validator-cet.onrender.com). For RAJYA (https://text-risk-scoring-service.onrender.com), the authoritative governance gateway endpoint documented across all architecture maps, test suites, and components is 'POST /api/v1/rajya/validate'. Ambiguity was caused by informal shorthand referencing 'validate' without the service prefix."
+    }
+  },
+  "servicesCount": 9,
+  "contracts": [
+    {
+      "service": "PRANA",
+      "role": "Event Forwarding, Replay & Propagation Log",
+      "baseUrl": "http://163.128.209.18:8103",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "Primary service health check and database connection verification",
+          "requestSchema": {
+            "type": "null",
+            "body": "none"
+          },
+          "responseSchema": {
+            "type": "object",
+            "required": [
+              "status",
+              "service"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "healthy",
+                  "ok",
+                  "running"
+                ]
+              },
+              "service": {
+                "type": "string"
+              },
+              "forwarding_enabled": {
+                "type": "boolean"
+              },
+              "mongodb": {
+                "type": "object"
+              }
+            }
+          },
+          "authExpectations": "Public endpoint (no auth header required)",
+          "timeoutBehavior": "8000ms client timeout via AbortController; fallback to HEALTH_STATES.TIMEOUT",
+          "errorBehavior": "HTTP 5xx -> HEALTH_STATES.DEGRADED; Connection Refused -> HEALTH_STATES.OFFLINE",
+          "traceCorrelationHeaders": "Propagates X-Trace-ID, X-Client-Timestamp, X-BHIV-Client",
+          "deterministicNormalization": "Normalized to HEALTH_STATES enum and OBSERVABILITY_CLASSIFICATIONS.LIVE/DEGRADED/OFFLINE/UNVERIFIED",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/prana/propagation-log",
+          "method": "GET",
+          "description": "Event propagation telemetry stream and audit log",
+          "requestSchema": {
+            "type": "null",
+            "queryParams": {
+              "limit": "number (optional)"
+            }
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "logged_at": {
+                      "type": "string (ISO8601)"
+                    },
+                    "trace_id": {
+                      "type": "string"
+                    },
+                    "destination": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "authExpectations": "Public endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Graceful empty array / fallback in TraceabilityInspector",
+          "traceCorrelationHeaders": "X-Trace-ID, X-Client-Timestamp",
+          "deterministicNormalization": "Sorted chronologically by timestamp_utc desc without inventing IDs",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/replay/{trace_id}",
+          "method": "GET",
+          "description": "Trace event lifecycle replay by unique trace identifier",
+          "requestSchema": {
+            "type": "null",
+            "pathParams": {
+              "trace_id": "string (URI encoded)"
+            }
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "trace_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "string (ISO8601)"
+              },
+              "execution_token": {
+                "type": "string"
+              },
+              "certification_status": {
+                "type": "string"
+              }
+            }
+          },
+          "authExpectations": "Public query endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "HTTP 404/500 returns null replay record; flags MISSING_LINK in stage 4 without fabrication",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Mapped to Stage 4 (Propagation) in TraceabilityInspector",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        }
+      ]
+    },
+    {
+      "service": "KARMA",
+      "role": "Cryptographic Integrity Helper & Merkle Proof Anchor",
+      "baseUrl": "http://163.128.209.18:8102",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "Service operational status probe",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "required": [
+              "status",
+              "service"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "healthy",
+                  "ok"
+                ]
+              },
+              "service": {
+                "type": "string",
+                "example": "bhiv-karma-helper"
+              }
+            }
+          },
+          "authExpectations": "Public endpoint",
+          "timeoutBehavior": "8000ms client timeout",
+          "errorBehavior": "Evaluated to OFFLINE / DEGRADED on failure",
+          "traceCorrelationHeaders": "X-Trace-ID, X-Client-Timestamp",
+          "deterministicNormalization": "Evaluated via evaluateServiceHealth",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/karma/latest-hash",
+          "method": "GET",
+          "description": "Fetches latest root block hash anchor for integrity verification",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "required": [
+              "latest_hash"
+            ],
+            "properties": {
+              "latest_hash": {
+                "type": "string (64-char hex SHA-256)"
+              }
+            }
+          },
+          "authExpectations": "Public endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Returns null hash; operator dashboard indicates NOT_RECEIVED without failing overall view",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Mapped to Stage 6 (Integrity) in Traceability & Constitutional Observability",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/karma/verify",
+          "method": "POST",
+          "description": "Integrity verification of event batch against Merkle root",
+          "requestSchema": {
+            "type": "object",
+            "properties": {
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "MATCH",
+                  "MISMATCH"
+                ]
+              },
+              "events_verified": {
+                "type": "number"
+              },
+              "matches": {
+                "type": "number"
+              },
+              "mismatches": {
+                "type": "array"
+              }
+            }
+          },
+          "authExpectations": "Public POST validation endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "HTTP 422 returned on unaligned schema; classified as DEGRADED / SCHEMA_MISMATCH",
+          "traceCorrelationHeaders": "X-Trace-ID, Content-Type: application/json",
+          "deterministicNormalization": "Evaluated deterministically in determinism test suite",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        }
+      ]
+    },
+    {
+      "service": "RAJYA",
+      "role": "Governance Enforcement Gate & Policy Risk Scoring",
+      "baseUrl": "https://text-risk-scoring-service.onrender.com",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "Governance gateway health probe",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "required": [
+              "status",
+              "service"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "ok"
+              },
+              "service": {
+                "type": "string",
+                "example": "bhiv-enforcement-gateway"
+              }
+            }
+          },
+          "authExpectations": "Public endpoint",
+          "timeoutBehavior": "8000ms timeout (handles Render cold start)",
+          "errorBehavior": "TIMEOUT classified as UNVERIFIED; 503 classified as DEGRADED",
+          "traceCorrelationHeaders": "X-Trace-ID, X-Client-Timestamp",
+          "deterministicNormalization": "Mapped to Governance domain health in Constitutional Observability",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/api/v1/rajya/validate",
+          "method": "POST",
+          "description": "Authoritative Governance validation gate for decision enforcement (ALLOW, DENY, ABSTAIN)",
+          "requestSchema": {
+            "type": "object",
+            "required": [
+              "execution_id"
+            ],
+            "properties": {
+              "execution_id": {
+                "type": "string"
+              },
+              "sarathiDecision": {
+                "type": "string",
+                "enum": [
+                  "ALLOW",
+                  "DENY",
+                  "ABSTAIN"
+                ]
+              },
+              "action": {
+                "type": "string"
+              },
+              "policy_tier": {
+                "type": "string"
+              }
+            }
+          },
+          "responseSchema": {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "APPROVED",
+                  "REJECT",
+                  "EXECUTION_APPROVED",
+                  "DENIED",
+                  "success"
+                ]
+              },
+              "verdict": {
+                "type": "string"
+              },
+              "rejection_code": {
+                "type": "string"
+              },
+              "rejection_reason": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string (ISO8601)"
+              }
+            }
+          },
+          "authExpectations": "Supports optional Bearer token via Authorization header",
+          "timeoutBehavior": "8000ms client timeout",
+          "errorBehavior": "Rejections parsed deterministically; SHA-256 hash computed for immutable audit record",
+          "traceCorrelationHeaders": "X-Trace-ID, X-Client-Timestamp, Content-Type: application/json",
+          "deterministicNormalization": "Processed in ConstitutionalObservability.jsx and Stage 1 of TraceabilityInspector",
+          "contractStatus": "CONTRACT AUTHORITATIVE (Resolved from docs/API_Mapping.md, docs/INTEGRATION.md, docs/Review_Packet.md, and src/)"
+        }
+      ]
+    },
+    {
+      "service": "TANTRA",
+      "role": "Gated Bridge Infrastructure & Routing Algorithms",
+      "baseUrl": "https://tantra-gated-bridge-infrastructure.onrender.com",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "Gated Bridge infrastructure health check",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              },
+              "bridge_state": {
+                "type": "string"
+              }
+            }
+          },
+          "authExpectations": "Public health endpoint; bridge execution endpoints require auth token",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "HTTP 503 Render suspension classified as DEGRADED without crashing dashboard",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Normalized to HEALTH_STATES.DEGRADED upon HTTP 503 response",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        }
+      ]
+    },
+    {
+      "service": "BUCKET",
+      "role": "Decentralized Provenance & Immutable Artifact Store",
+      "baseUrl": "https://bhiv-bucket-i1l6.onrender.com",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "Bucket store operational health probe",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "storageType": {
+                "type": "string",
+                "example": "append_only"
+              }
+            }
+          },
+          "authExpectations": "Public health probe",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "HTTP 503 classified as DEGRADED; fallback to local immutable cache in UI",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Normalized via evaluateServiceHealth",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/bucket/chain-state",
+          "method": "GET",
+          "description": "Queries provenance chain ledger state, artifact count, and Merkle root hash",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "number"
+              },
+              "root_hash": {
+                "type": "string"
+              },
+              "chain_verified": {
+                "type": "boolean"
+              }
+            }
+          },
+          "authExpectations": "Public read endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Gracefully returns UNAVAILABLE state without failing surrounding dashboard tabs",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Mapped to Stage 5 Provenance in Traceability & Provenance Domain in Observability",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/bucket/artifacts",
+          "method": "GET",
+          "description": "Fetches list of stored provenance artifacts with schema hashes",
+          "requestSchema": {
+            "type": "null",
+            "queryParams": {
+              "limit": "number"
+            }
+          },
+          "responseSchema": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifact_id": {
+                  "type": "string"
+                },
+                "artifact_type": {
+                  "type": "string"
+                },
+                "hash": {
+                  "type": "string"
+                },
+                "parent_hash": {
+                  "type": "string"
+                },
+                "trace_id": {
+                  "type": "string"
+                },
+                "timestamp_utc": {
+                  "type": "string (ISO8601)"
+                }
+              }
+            }
+          },
+          "authExpectations": "Public read endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Returns empty array on error; unverified offline state logged",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Indexed by trace_id and artifact_id in extractRecentTraces()",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        }
+      ]
+    },
+    {
+      "service": "SANSKAR",
+      "role": "Constitutional Convergence Gate & AI Alignment Verifier",
+      "baseUrl": "https://full-tantra-constitutional-convergence.onrender.com",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "Constitutional Convergence service health and contract version probe",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "healthy"
+              },
+              "service": {
+                "type": "string",
+                "example": "sanskar"
+              },
+              "contract_version": {
+                "type": "string",
+                "example": "v1"
+              }
+            }
+          },
+          "authExpectations": "Public endpoint",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Classified as TIMEOUT or OFFLINE; preserves contract version fallback in UI",
+          "traceCorrelationHeaders": "X-Trace-ID, X-Client-Timestamp",
+          "deterministicNormalization": "Mapped to Stage 2 Constitutional Convergence in Traceability & Observability",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        }
+      ]
+    },
+    {
+      "service": "HARSHA",
+      "role": "SL Validator, CET Compiler & KSML Bytecode Execution Gate",
+      "baseUrl": "https://sl-validator-cet.onrender.com",
+      "endpoints": [
+        {
+          "path": "/health",
+          "method": "GET",
+          "description": "HARSHA validator runtime health probe",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "validator": {
+                "type": "string"
+              }
+            }
+          },
+          "authExpectations": "Public health probe",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Times out on suspended Render container; classified as TIMEOUT / UNVERIFIED",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Mapped to Stage 3 Execution Validation in Traceability",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE"
+        },
+        {
+          "path": "/validate",
+          "method": "POST",
+          "description": "Deterministic DecisionRequest validation against KSML rule tree",
+          "requestSchema": {
+            "type": "object",
+            "properties": {
+              "decision_request": {
+                "type": "object"
+              }
+            }
+          },
+          "responseSchema": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "verdict": {
+                "type": "string"
+              }
+            }
+          },
+          "authExpectations": "API Key or Bearer Token where configured",
+          "timeoutBehavior": "8000ms client timeout",
+          "errorBehavior": "Fails closed; returns UNVERIFIED execution state if validator unreachable",
+          "traceCorrelationHeaders": "X-Trace-ID, Content-Type: application/json",
+          "deterministicNormalization": "Serialized deterministically in determinism test suite",
+          "contractStatus": "CONTRACT VERIFIED & AUTHORITATIVE (SL Validator CET Endpoint)"
+        },
+        {
+          "path": "/validate_execution",
+          "method": "POST",
+          "description": "Bridge validation before SUM-SCRIPT bytecode execution",
+          "requestSchema": {
+            "type": "object"
+          },
+          "responseSchema": {
+            "type": "object"
+          },
+          "authExpectations": "Auth token required",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Fail-closed",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Controlled via runtime-services-widget ActionBtn",
+          "contractStatus": "CONTRACT SPECIFIED (Awaiting active host)"
+        },
+        {
+          "path": "/execute",
+          "method": "POST",
+          "description": "Executes validated SUM-SCRIPT payload",
+          "requestSchema": {
+            "type": "object"
+          },
+          "responseSchema": {
+            "type": "object"
+          },
+          "authExpectations": "Auth token required",
+          "timeoutBehavior": "8000ms timeout",
+          "errorBehavior": "Fail-closed",
+          "traceCorrelationHeaders": "X-Trace-ID",
+          "deterministicNormalization": "Deterministic execution reducer",
+          "contractStatus": "CONTRACT SPECIFIED (Awaiting active host)"
+        }
+      ]
+    },
+    {
+      "service": "SHAKTI",
+      "role": "Cross-Service Federation Registry & Node Map Hub",
+      "baseUrl": "Local UI Hub / Control Plane",
+      "endpoints": [
+        {
+          "path": "N/A (Local UI Federation Hub)",
+          "method": "N/A",
+          "description": "Local multi-tab federation hub and node navigation state",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "null"
+          },
+          "authExpectations": "Local browser execution",
+          "timeoutBehavior": "N/A",
+          "errorBehavior": "UI navigation isolated",
+          "traceCorrelationHeaders": "Internal component state",
+          "deterministicNormalization": "Deterministic tab state reducer",
+          "contractStatus": "BLOCKED — CANONICAL FEDERATION API UNAVAILABLE (UI Federation Active)"
+        }
+      ]
+    },
+    {
+      "service": "InsightFlow",
+      "role": "Unified Telemetry & Observability Aggregator",
+      "baseUrl": "Unspecified in BHIV documentation",
+      "endpoints": [
+        {
+          "path": "N/A",
+          "method": "N/A",
+          "description": "InsightFlow central collector endpoint",
+          "requestSchema": {
+            "type": "null"
+          },
+          "responseSchema": {
+            "type": "null"
+          },
+          "authExpectations": "Unspecified",
+          "timeoutBehavior": "N/A",
+          "errorBehavior": "N/A",
+          "traceCorrelationHeaders": "X-Trace-ID, X-Client-Timestamp generated in compliance with InsightFlow header protocol",
+          "deterministicNormalization": "Client complies with InsightFlow header format (UUID v4 traceId, ISO 8601 timestamp)",
+          "contractStatus": "IMPLEMENTATION VERIFIED / CENTRAL COLLECTOR BLOCKED"
+        }
+      ]
+    }
+  ]
+}

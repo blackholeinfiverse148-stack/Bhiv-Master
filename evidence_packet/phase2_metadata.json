@@ -1,0 +1,145 @@
+{
+  "repositoryName": "blackholeinfiverse148-stack/Bhiv-Master",
+  "packageName": "bhiv-master",
+  "packageVersion": "0.0.0",
+  "currentBranch": "phase2-runtime-dashboard",
+  "currentCommitSha": "237fdf8759c27a6136ab84b19de7e0a12b8848c8",
+  "commitMessage": "feat(certification): complete Phase 2 final evidence-hardening pass",
+  "remoteOriginUrl": "https://github.com/blackholeinfiverse148-stack/Bhiv-Master.git",
+  "extractionTimestamp": "2026-09-25T07:31:12.524Z",
+  "environment": {
+    "nodeVersion": "v24.15.0",
+    "npmVersion": "11.12.1",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "verificationSummary": {
+    "lint": {
+      "status": "PASSED (0 errors)",
+      "exitCode": 0
+    },
+    "build": {
+      "status": "SUCCESS (Vite production bundle generated)",
+      "exitCode": 0
+    },
+    "test": {
+      "status": "PASSED",
+      "exitCode": 0,
+      "testSuiteCount": 9,
+      "testCount": 115,
+      "coverage": {
+        "statementCoverage": "45.96%",
+        "branchCoverage": "44.07%",
+        "functionCoverage": "35.60%",
+        "lineCoverage": "51.15%",
+        "servicesCoverage": "92.10%",
+        "componentsCoverage": "84.09%"
+      }
+    },
+    "e2eRuntime": {
+      "timestamp": "2026-09-25T07:29:57.064Z",
+      "summary": {
+        "totalProbes": 15,
+        "liveHealthVerifiedCount": 5,
+        "liveContractVerifiedCount": 2,
+        "liveBusinessFlowVerifiedCount": 2,
+        "unavailableCount": 4,
+        "blockedCount": 2
+      }
+    }
+  },
+  "configuredServices": [
+    {
+      "name": "PRANA",
+      "role": "Event Propagation & Replay",
+      "host": "163.128.209.18:8103",
+      "protocol": "HTTP"
+    },
+    {
+      "name": "KARMA",
+      "role": "Cryptographic Integrity",
+      "host": "163.128.209.18:8102",
+      "protocol": "HTTP"
+    },
+    {
+      "name": "RAJYA",
+      "role": "Governance Enforcement Gate",
+      "host": "text-risk-scoring-service.onrender.com",
+      "protocol": "HTTPS"
+    },
+    {
+      "name": "SANSKAR",
+      "role": "Constitutional Convergence",
+      "host": "full-tantra-constitutional-convergence.onrender.com",
+      "protocol": "HTTPS"
+    },
+    {
+      "name": "TANTRA",
+      "role": "Gated Bridge Infrastructure",
+      "host": "tantra-gated-bridge-infrastructure.onrender.com",
+      "protocol": "HTTPS"
+    },
+    {
+      "name": "BUCKET",
+      "role": "Provenance & Artifact Store",
+      "host": "bhiv-bucket-i1l6.onrender.com",
+      "protocol": "HTTPS"
+    },
+    {
+      "name": "HARSHA",
+      "role": "SL Validator CET / KSML",
+      "host": "sl-validator-cet.onrender.com",
+      "protocol": "HTTPS"
+    },
+    {
+      "name": "SHAKTI",
+      "role": "Master Federation Dashboard",
+      "host": "Local UI Federation Hub",
+      "protocol": "Browser"
+    },
+    {
+      "name": "InsightFlow",
+      "role": "Unified Telemetry Observability",
+      "host": "InsightFlow Header Standard (Unspecified Endpoint)",
+      "protocol": "HTTP Headers"
+    }
+  ],
+  "deploymentStatus": {
+    "vmDeployment": "BLOCKED (VM host credentials and target IP access unavailable)",
+    "vmRollback": "BLOCKED (Target environment unavailable for remote container rollback)",
+    "localProductionBuild": "SUCCESS (dist/ production bundle verified)"
+  },
+  "knownBlockers": [
+    {
+      "id": "BLK-01",
+      "category": "Infrastructure",
+      "description": "VM host access, target IP, and deployment SSH credentials unavailable.",
+      "impact": "Live VM production deployment and remote container rollback cannot be executed."
+    },
+    {
+      "id": "BLK-02",
+      "category": "Federation",
+      "description": "Canonical SHAKTI backend federation API endpoint and schema unavailable.",
+      "impact": "Cross-service API federation blocked; UI-level federation hub active."
+    },
+    {
+      "id": "BLK-03",
+      "category": "Observability",
+      "description": "InsightFlow central aggregator endpoint not published.",
+      "impact": "Telemetry adheres to InsightFlow header specification (UUID v4 / ISO 8601), but central backend ingestion is blocked."
+    },
+    {
+      "id": "BLK-04",
+      "category": "External Containers",
+      "description": "Free tier Render microservices (TANTRA, BUCKET, HARSHA, SANSKAR, RAJYA) subject to container suspension (503) or cold starts (>8s).",
+      "impact": "Handled gracefully via Promise.allSettled and classified as DEGRADED / UNAVAILABLE / TIMEOUT without crashing control plane."
+    },
+    {
+      "id": "BLK-05",
+      "category": "Storage Layer & Consensus",
+      "description": "Physical database durability, cryptographic ledger persistence, replication, and distributed consensus unverified from frontend.",
+      "impact": "Requires backend server and database audit evidence; unverified from client repository."
+    }
+  ],
+  "confidentialityAssertion": "Verified clean of bearer tokens, private keys, passwords, API keys, and credentials."
+}

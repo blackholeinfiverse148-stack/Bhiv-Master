@@ -1,0 +1,274 @@
+{
+  "generatedAt": "2026-09-25T07:29:57.064Z",
+  "probeTimeoutMs": 6000,
+  "summary": {
+    "totalProbes": 15,
+    "liveHealthVerifiedCount": 5,
+    "liveContractVerifiedCount": 2,
+    "liveBusinessFlowVerifiedCount": 2,
+    "unavailableCount": 4,
+    "blockedCount": 2
+  },
+  "results": [
+    {
+      "timestamp": "2026-09-25T07:29:49.991Z",
+      "service": "PRANA",
+      "evidenceType": "health",
+      "endpoint": "http://163.128.209.18:8103/health",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 225,
+      "responseClassification": "A. LIVE HEALTH VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": "bhiv-prana"
+      },
+      "sanitizedResponseSummary": "{\"status\":\"healthy\",\"service\":\"bhiv-prana\",\"forwarding_enabled\":true,\"mongodb\":{\"mongodb_connected\":true,\"database_name\"",
+      "result": "PASSED (HEALTH)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:50.218Z",
+      "service": "PRANA",
+      "evidenceType": "contract",
+      "endpoint": "http://163.128.209.18:8103/prana/propagation-log",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 332,
+      "responseClassification": "B. LIVE CONTRACT VERIFIED",
+      "observedIdentifiers": {
+        "traceId": "niyantran-ea919eeddc2b43f0893689cb169109bf",
+        "executionId": null,
+        "hash": null,
+        "service": null
+      },
+      "sanitizedResponseSummary": "{\"events\":[{\"logged_at\":\"2026-09-16T10:36:13.725160+00:00\",\"trace_id\":\"niyantran-ea919eeddc2b43f0893689cb169109bf\",\"acti",
+      "result": "PASSED (CONTRACT)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:50.653Z",
+      "service": "PRANA",
+      "evidenceType": "business_flow",
+      "endpoint": "http://163.128.209.18:8103/replay/niyam-86bb320140234c9c82069774a3f1244c",
+      "httpMethod": "GET",
+      "httpStatus": 404,
+      "latencyMs": 166,
+      "responseClassification": "E. UNAVAILABLE",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": null
+      },
+      "sanitizedResponseSummary": "{\"detail\":\"Replay not found\"}",
+      "result": "UNAVAILABLE (HTTP 404 Not Found)",
+      "limitation": "Trace replay identifier not found in backend store"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:50.819Z",
+      "service": "KARMA",
+      "evidenceType": "health",
+      "endpoint": "http://163.128.209.18:8102/health",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 232,
+      "responseClassification": "A. LIVE HEALTH VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": "bhiv-karma-helper"
+      },
+      "sanitizedResponseSummary": "{\"status\":\"healthy\",\"service\":\"bhiv-karma-helper\"}",
+      "result": "PASSED (HEALTH)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:51.051Z",
+      "service": "KARMA",
+      "evidenceType": "contract",
+      "endpoint": "http://163.128.209.18:8102/karma/latest-hash",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 176,
+      "responseClassification": "B. LIVE CONTRACT VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "service": null
+      },
+      "sanitizedResponseSummary": "{\"latest_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"chain\":\"PranaPacket\"}",
+      "result": "PASSED (CONTRACT)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:51.227Z",
+      "service": "KARMA",
+      "evidenceType": "business_flow",
+      "endpoint": "http://163.128.209.18:8102/karma/verify",
+      "httpMethod": "POST",
+      "httpStatus": 200,
+      "latencyMs": 386,
+      "responseClassification": "C. LIVE BUSINESS FLOW VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": null
+      },
+      "sanitizedResponseSummary": "{\"status\":\"MATCH\",\"events_verified\":28,\"matches\":28,\"mismatches\":[],\"validation_ids\":[\"2b08ef46-6559-4c7c-a536-6f5c68bb1",
+      "result": "PASSED (BUSINESS FLOW)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:51.614Z",
+      "service": "RAJYA",
+      "evidenceType": "health",
+      "endpoint": "https://text-risk-scoring-service.onrender.com/health",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 483,
+      "responseClassification": "A. LIVE HEALTH VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": "bhiv-enforcement-gateway"
+      },
+      "sanitizedResponseSummary": "{\"status\":\"ok\",\"service\":\"bhiv-enforcement-gateway\"}",
+      "result": "PASSED (HEALTH)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:52.098Z",
+      "service": "RAJYA",
+      "evidenceType": "business_flow",
+      "endpoint": "https://text-risk-scoring-service.onrender.com/api/v1/rajya/validate",
+      "httpMethod": "POST",
+      "httpStatus": 200,
+      "latencyMs": 315,
+      "responseClassification": "C. LIVE BUSINESS FLOW VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": null
+      },
+      "sanitizedResponseSummary": "{\"status\":\"REJECT\",\"rejection_code\":\"RAJYA_SARATHI_AUTHORITY_MISSING\",\"rejection_reason\":\"Sarathi decision is missing. C",
+      "result": "PASSED (BUSINESS FLOW)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:52.413Z",
+      "service": "TANTRA",
+      "evidenceType": "health",
+      "endpoint": "https://tantra-gated-bridge-infrastructure.onrender.com/health",
+      "httpMethod": "GET",
+      "httpStatus": 503,
+      "latencyMs": 986,
+      "responseClassification": "E. UNAVAILABLE",
+      "observedIdentifiers": {},
+      "sanitizedResponseSummary": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initia",
+      "result": "UNAVAILABLE — LIVE HEALTH BLOCKED (HTTP 503)",
+      "limitation": "Render container suspended or gateway spin-down"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:53.400Z",
+      "service": "BUCKET",
+      "evidenceType": "health",
+      "endpoint": "https://bhiv-bucket-i1l6.onrender.com/health",
+      "httpMethod": "GET",
+      "httpStatus": 503,
+      "latencyMs": 802,
+      "responseClassification": "E. UNAVAILABLE",
+      "observedIdentifiers": {},
+      "sanitizedResponseSummary": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initia",
+      "result": "UNAVAILABLE — LIVE PROVENANCE BLOCKED (HTTP 503)",
+      "limitation": "Render container suspended or gateway spin-down"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:54.202Z",
+      "service": "BUCKET",
+      "evidenceType": "contract",
+      "endpoint": "https://bhiv-bucket-i1l6.onrender.com/bucket/chain-state",
+      "httpMethod": "GET",
+      "httpStatus": 503,
+      "latencyMs": 883,
+      "responseClassification": "E. UNAVAILABLE",
+      "observedIdentifiers": {},
+      "sanitizedResponseSummary": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initia",
+      "result": "UNAVAILABLE — LIVE PROVENANCE BLOCKED (HTTP 503)",
+      "limitation": "Render container suspended or gateway spin-down"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:55.085Z",
+      "service": "SANSKAR",
+      "evidenceType": "health",
+      "endpoint": "https://full-tantra-constitutional-convergence.onrender.com/health",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 995,
+      "responseClassification": "A. LIVE HEALTH VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": "sanskar"
+      },
+      "sanitizedResponseSummary": "{\"status\":\"healthy\",\"service\":\"sanskar\",\"contract_version\":\"v1\"}",
+      "result": "PASSED (HEALTH)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:56.080Z",
+      "service": "HARSHA",
+      "evidenceType": "health",
+      "endpoint": "https://sl-validator-cet.onrender.com/health",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "latencyMs": 983,
+      "responseClassification": "A. LIVE HEALTH VERIFIED",
+      "observedIdentifiers": {
+        "traceId": null,
+        "executionId": null,
+        "hash": null,
+        "service": "sl-validator"
+      },
+      "sanitizedResponseSummary": "{\"status\":\"ok\",\"service\":\"sl-validator\"}",
+      "result": "PASSED (HEALTH)",
+      "limitation": "Production live runtime active"
+    },
+    {
+      "timestamp": "2026-09-25T07:29:57.064Z",
+      "service": "SHAKTI",
+      "evidenceType": "federation",
+      "endpoint": "N/A (Local UI Federation Hub only)",
+      "httpMethod": "N/A",
+      "httpStatus": null,
+      "latencyMs": 0,
+      "responseClassification": "F. BLOCKED",
+      "observedIdentifiers": {},
+      "sanitizedResponseSummary": "No external backend endpoint published",
+      "result": "UI FEDERATION ACTIVE / CANONICAL BACKEND BLOCKED",
+      "limitation": "Canonical SHAKTI backend federation API endpoint unavailable; UI federation active."
+    },
+    {
+      "timestamp": "2026-09-25T07:29:57.064Z",
+      "service": "InsightFlow",
+      "evidenceType": "telemetry",
+      "endpoint": "N/A (Endpoint Unspecified)",
+      "httpMethod": "N/A",
+      "httpStatus": null,
+      "latencyMs": 0,
+      "responseClassification": "F. BLOCKED",
+      "observedIdentifiers": {},
+      "sanitizedResponseSummary": "No external backend endpoint published",
+      "result": "IMPLEMENTATION VERIFIED / CENTRAL COLLECTOR BLOCKED",
+      "limitation": "Canonical InsightFlow backend endpoint not published; client header standard verified."
+    }
+  ]
+}
