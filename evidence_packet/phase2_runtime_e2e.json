@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T07:29:57.064Z",
+  "generatedAt": "2026-09-25T07:35:37.155Z",
   "probeTimeoutMs": 6000,
   "summary": {
     "totalProbes": 15,
@@ -11,13 +11,13 @@
   },
   "results": [
     {
-      "timestamp": "2026-09-25T07:29:49.991Z",
+      "timestamp": "2026-09-25T07:35:28.210Z",
       "service": "PRANA",
       "evidenceType": "health",
       "endpoint": "http://163.128.209.18:8103/health",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 225,
+      "latencyMs": 276,
       "responseClassification": "A. LIVE HEALTH VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -30,13 +30,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:50.218Z",
+      "timestamp": "2026-09-25T07:35:28.489Z",
       "service": "PRANA",
       "evidenceType": "contract",
       "endpoint": "http://163.128.209.18:8103/prana/propagation-log",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 332,
+      "latencyMs": 214,
       "responseClassification": "B. LIVE CONTRACT VERIFIED",
       "observedIdentifiers": {
         "traceId": "niyantran-ea919eeddc2b43f0893689cb169109bf",
@@ -49,13 +49,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:50.653Z",
+      "timestamp": "2026-09-25T07:35:28.801Z",
       "service": "PRANA",
       "evidenceType": "business_flow",
       "endpoint": "http://163.128.209.18:8103/replay/niyam-86bb320140234c9c82069774a3f1244c",
       "httpMethod": "GET",
       "httpStatus": 404,
-      "latencyMs": 166,
+      "latencyMs": 106,
       "responseClassification": "E. UNAVAILABLE",
       "observedIdentifiers": {
         "traceId": null,
@@ -68,13 +68,13 @@
       "limitation": "Trace replay identifier not found in backend store"
     },
     {
-      "timestamp": "2026-09-25T07:29:50.819Z",
+      "timestamp": "2026-09-25T07:35:28.913Z",
       "service": "KARMA",
       "evidenceType": "health",
       "endpoint": "http://163.128.209.18:8102/health",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 232,
+      "latencyMs": 228,
       "responseClassification": "A. LIVE HEALTH VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -87,13 +87,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:51.051Z",
+      "timestamp": "2026-09-25T07:35:29.141Z",
       "service": "KARMA",
       "evidenceType": "contract",
       "endpoint": "http://163.128.209.18:8102/karma/latest-hash",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 176,
+      "latencyMs": 236,
       "responseClassification": "B. LIVE CONTRACT VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -106,13 +106,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:51.227Z",
+      "timestamp": "2026-09-25T07:35:29.377Z",
       "service": "KARMA",
       "evidenceType": "business_flow",
       "endpoint": "http://163.128.209.18:8102/karma/verify",
       "httpMethod": "POST",
       "httpStatus": 200,
-      "latencyMs": 386,
+      "latencyMs": 763,
       "responseClassification": "C. LIVE BUSINESS FLOW VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -120,18 +120,18 @@
         "hash": null,
         "service": null
       },
-      "sanitizedResponseSummary": "{\"status\":\"MATCH\",\"events_verified\":28,\"matches\":28,\"mismatches\":[],\"validation_ids\":[\"2b08ef46-6559-4c7c-a536-6f5c68bb1",
+      "sanitizedResponseSummary": "{\"status\":\"MATCH\",\"events_verified\":28,\"matches\":28,\"mismatches\":[],\"validation_ids\":[\"68e983c9-af58-4b82-b571-e8b353d70",
       "result": "PASSED (BUSINESS FLOW)",
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:51.614Z",
+      "timestamp": "2026-09-25T07:35:30.140Z",
       "service": "RAJYA",
       "evidenceType": "health",
       "endpoint": "https://text-risk-scoring-service.onrender.com/health",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 483,
+      "latencyMs": 1132,
       "responseClassification": "A. LIVE HEALTH VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -144,13 +144,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:52.098Z",
+      "timestamp": "2026-09-25T07:35:31.274Z",
       "service": "RAJYA",
       "evidenceType": "business_flow",
       "endpoint": "https://text-risk-scoring-service.onrender.com/api/v1/rajya/validate",
       "httpMethod": "POST",
       "httpStatus": 200,
-      "latencyMs": 315,
+      "latencyMs": 686,
       "responseClassification": "C. LIVE BUSINESS FLOW VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -163,13 +163,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:52.413Z",
+      "timestamp": "2026-09-25T07:35:31.961Z",
       "service": "TANTRA",
       "evidenceType": "health",
       "endpoint": "https://tantra-gated-bridge-infrastructure.onrender.com/health",
       "httpMethod": "GET",
       "httpStatus": 503,
-      "latencyMs": 986,
+      "latencyMs": 1282,
       "responseClassification": "E. UNAVAILABLE",
       "observedIdentifiers": {},
       "sanitizedResponseSummary": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initia",
@@ -177,13 +177,13 @@
       "limitation": "Render container suspended or gateway spin-down"
     },
     {
-      "timestamp": "2026-09-25T07:29:53.400Z",
+      "timestamp": "2026-09-25T07:35:33.243Z",
       "service": "BUCKET",
       "evidenceType": "health",
       "endpoint": "https://bhiv-bucket-i1l6.onrender.com/health",
       "httpMethod": "GET",
       "httpStatus": 503,
-      "latencyMs": 802,
+      "latencyMs": 1274,
       "responseClassification": "E. UNAVAILABLE",
       "observedIdentifiers": {},
       "sanitizedResponseSummary": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initia",
@@ -191,13 +191,13 @@
       "limitation": "Render container suspended or gateway spin-down"
     },
     {
-      "timestamp": "2026-09-25T07:29:54.202Z",
+      "timestamp": "2026-09-25T07:35:34.518Z",
       "service": "BUCKET",
       "evidenceType": "contract",
       "endpoint": "https://bhiv-bucket-i1l6.onrender.com/bucket/chain-state",
       "httpMethod": "GET",
       "httpStatus": 503,
-      "latencyMs": 883,
+      "latencyMs": 687,
       "responseClassification": "E. UNAVAILABLE",
       "observedIdentifiers": {},
       "sanitizedResponseSummary": "<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initia",
@@ -205,13 +205,13 @@
       "limitation": "Render container suspended or gateway spin-down"
     },
     {
-      "timestamp": "2026-09-25T07:29:55.085Z",
+      "timestamp": "2026-09-25T07:35:35.205Z",
       "service": "SANSKAR",
       "evidenceType": "health",
       "endpoint": "https://full-tantra-constitutional-convergence.onrender.com/health",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 995,
+      "latencyMs": 987,
       "responseClassification": "A. LIVE HEALTH VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -224,13 +224,13 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:56.080Z",
+      "timestamp": "2026-09-25T07:35:36.193Z",
       "service": "HARSHA",
       "evidenceType": "health",
       "endpoint": "https://sl-validator-cet.onrender.com/health",
       "httpMethod": "GET",
       "httpStatus": 200,
-      "latencyMs": 983,
+      "latencyMs": 961,
       "responseClassification": "A. LIVE HEALTH VERIFIED",
       "observedIdentifiers": {
         "traceId": null,
@@ -243,7 +243,7 @@
       "limitation": "Production live runtime active"
     },
     {
-      "timestamp": "2026-09-25T07:29:57.064Z",
+      "timestamp": "2026-09-25T07:35:37.154Z",
       "service": "SHAKTI",
       "evidenceType": "federation",
       "endpoint": "N/A (Local UI Federation Hub only)",
@@ -257,7 +257,7 @@
       "limitation": "Canonical SHAKTI backend federation API endpoint unavailable; UI federation active."
     },
     {
-      "timestamp": "2026-09-25T07:29:57.064Z",
+      "timestamp": "2026-09-25T07:35:37.154Z",
       "service": "InsightFlow",
       "evidenceType": "telemetry",
       "endpoint": "N/A (Endpoint Unspecified)",

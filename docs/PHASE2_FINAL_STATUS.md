@@ -118,4 +118,8 @@ The following microservices were probed live over the network and returned valid
 
 ## 7. Certification Scope Statement
 
-> "Frontend and control-plane production readiness is **VERIFIED** for all specified deliverables in the BHIV Master repository, including the Constitutional Observability dashboard, 6-stage lifecycle traceability engine, React Error Boundary fault isolation, deterministic state reducers, and live microservice reachability for PRANA, KARMA, RAJYA, SANSKAR, and HARSHA. Full end-to-end production certification remains **PARTIALLY VERIFIED / BLOCKED** due to external dependencies: a complete 6-stage live execution is blocked while BUCKET is suspended (HTTP 503), target VM deployment access is unavailable, the canonical SHAKTI backend federation API is unpublished, and backend storage immutability/consensus requires server-side audits."
+### 7.1 Task 1 Certification Scope
+> "Frontend and control-plane production readiness for Task 1 is **VERIFIED** for the tested implementation surface, including build artifacts, lint rules, fault-isolated monitoring, deterministic reducers, and reachable microservice integrations (PRANA, KARMA, RAJYA, SANSKAR, HARSHA). Full production certification remains **PARTIALLY VERIFIED / BLOCKED** where external infrastructure (target VM host credentials, remote container rollback environments, canonical SHAKTI backend federation API, or physical disk immutability proofs) are unavailable in this client repository."
+
+### 7.2 Task 2 Certification Scope
+> "Frontend and control-plane implementation and automated verification for Task 2 are **VERIFIED**. Live runtime integration is **PARTIALLY VERIFIED** because TANTRA and BUCKET are unavailable and a complete six-stage production execution has not been demonstrated."

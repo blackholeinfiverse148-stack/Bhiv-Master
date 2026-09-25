@@ -3,10 +3,11 @@
   "packageName": "bhiv-master",
   "packageVersion": "0.0.0",
   "currentBranch": "phase2-runtime-dashboard",
-  "currentCommitSha": "237fdf8759c27a6136ab84b19de7e0a12b8848c8",
+  "metadataGeneratedFromCommit": "adcf56ab57b2fabc1e32a5b0380e568f35baa4b3",
+  "commitProvenanceNote": "Authoritative final commit SHA is recorded by Git history and reported in docs/PHASE2_FINAL_STATUS.md rather than self-referentially within tracked repository payload.",
   "commitMessage": "feat(certification): complete Phase 2 final evidence-hardening pass",
   "remoteOriginUrl": "https://github.com/blackholeinfiverse148-stack/Bhiv-Master.git",
-  "extractionTimestamp": "2026-09-25T07:31:12.524Z",
+  "extractionTimestamp": "2026-09-25T07:35:51.443Z",
   "environment": {
     "nodeVersion": "v24.15.0",
     "npmVersion": "11.12.1",
@@ -37,7 +38,7 @@
       }
     },
     "e2eRuntime": {
-      "timestamp": "2026-09-25T07:29:57.064Z",
+      "timestamp": "2026-09-25T07:35:37.155Z",
       "summary": {
         "totalProbes": 15,
         "liveHealthVerifiedCount": 5,
